@@ -49,7 +49,7 @@ begin
   );
   return new;
 end;
-$$ language plpgsql security modeller;
+$$ language plpgsql security definer;
 
 create trigger on_auth_user_created
   after insert on auth.users
