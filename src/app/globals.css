@@ -30,9 +30,27 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
+  --font-inter: var(--font-inter);
+  --font-outfit: var(--font-outfit);
+
   --animate-fade-in: fade-in 0.5s ease-out;
   --animate-slide-up: slide-up 0.5s ease-out;
   --animate-glass-shine: glass-shine 2s linear infinite;
+  --animate-pulse-slow: pulse-slow 8s ease-in-out infinite;
+
+  @keyframes pulse-slow {
+
+    0%,
+    100% {
+      opacity: 0.15;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.25;
+      transform: scale(1.1);
+    }
+  }
 
   @keyframes fade-in {
     0% {
@@ -129,16 +147,33 @@
   }
 
   .premium-card {
-    @apply bg-card border border-border shadow-sm hover:shadow-md transition-all duration-300 rounded-xl overflow-hidden;
+    @apply bg-card border border-border/60 shadow-sm hover:shadow-xl hover:shadow-hub-indigo/5 transition-all duration-500 rounded-2xl overflow-hidden;
+  }
+
+  .page-header {
+    @apply space-y-2 mb-8 animate-fade-in;
+  }
+
+  .page-title {
+    @apply text-3xl font-outfit font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground via-foreground to-hub-indigo;
+  }
+
+  .page-description {
+    @apply text-muted-foreground font-medium text-sm max-w-2xl;
   }
 
   .nav-link {
-    @apply text-muted-foreground hover:text-foreground hover:bg-accent px-3 py-2 rounded-md transition-colors font-medium;
+    @apply text-muted-foreground hover:text-foreground hover:bg-accent px-3 py-2 rounded-xl transition-all font-medium;
   }
 }
 
 .gradient-text {
   @apply bg-clip-text text-transparent bg-linear-to-br from-hub-indigo to-hub-purple;
+}
+
+/* Premium Decorations */
+.bg-orb {
+  @apply absolute rounded-full blur-[120px] pointer-events-none opacity-20 animate-pulse-slow;
 }
 
 ::-webkit-scrollbar {

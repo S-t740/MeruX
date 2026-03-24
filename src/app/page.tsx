@@ -17,7 +17,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hub-indigo opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-hub-indigo"></span>
             </span>
-            MTIH Learn: Phase 1 Live
+            MeruX Platform Live
           </div>
 
           <h1 className="text-5xl md:text-7xl font-outfit font-bold tracking-tight">
@@ -39,7 +39,7 @@ export default function Home() {
             </Link>
             <Link
               href="#vision"
-              className="px-8 py-3 rounded-full bg-white/5 border border-white/10 font-semibold hover:bg-white/10 transition-all"
+              className="px-8 py-3 rounded-full bg-white/5 border border-white/10 font-semibold hover:bg-white/10 transition-all text-white"
             >
               Learn More
             </Link>
