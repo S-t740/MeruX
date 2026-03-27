@@ -305,21 +305,23 @@ export default function Home() {
       </nav>
 
       {/* ───────────────── Hero Section ───────────────── */}
-      <section className="relative px-6 pt-32 pb-24 md:pt-44 md:pb-36 overflow-hidden min-h-[600px] md:min-h-[700px]">
+      <section className="relative isolate px-6 pt-32 pb-24 md:pt-44 md:pb-36 overflow-hidden min-h-[600px] md:min-h-[700px]">
         {/* Background image - absolute positioning */}
         <Image
-          src="/brand/hero.jpg"
+          src="/brand/hero-bg.jpg"
           alt="Hero background"
           fill
           priority
           quality={100}
-          className="absolute inset-0 object-cover -z-20 w-full h-full"
+          className="absolute inset-0 object-cover z-0 w-full h-full"
           style={{ objectFit: "cover" }}
         />
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+        {/* Overlay gradient (dark mode only) */}
+        {darkMode && (
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-background/50 via-background/35 to-background/70" />
+        )}
 
-        <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-in relative z-10">
+        <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-in relative z-20">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-hub-indigo/10 border border-hub-indigo/20 text-sm font-semibold text-hub-indigo">
             <span className="relative flex h-2 w-2">
