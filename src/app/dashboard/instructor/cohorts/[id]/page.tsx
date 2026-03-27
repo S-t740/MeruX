@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Users2, ArrowLeft, Search, UserPlus, UserMinus, ShieldAlert } from "lucide-react";
+import { Users2, ArrowLeft, Search, UserPlus, UserMinus, ShieldAlert, Plus } from "lucide-react";
 import { addStudentToCohort, removeStudentFromCohort } from "@/lib/actions/cohorts";
 import { cn } from "@/lib/utils";
 
