@@ -257,7 +257,7 @@ export default function PublicPortfolio() {
                             <div className="border border-dashed border-border/50 rounded-3xl p-16 text-center flex flex-col items-center bg-accent/5">
                                 <Code className="w-16 h-16 text-muted-foreground/30 mb-6" />
                                 <h3 className="font-outfit font-bold text-2xl mb-2">Portfolio is brewing</h3>
-                                <p className="text-muted-foreground max-w-sm">This student is currently in the incubator stage, building their first major projects powered by MeruX Innovation Engine.</p>
+                                <p className="text-muted-foreground max-w-sm">This student is currently in the incubator stage, building their first major projects powered by the Merux LMS innovation engine.</p>
                             </div>
                         )}
                     </div>

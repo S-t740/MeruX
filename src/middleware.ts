@@ -1,8 +1,17 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { createClient } from '@/lib/supabase/server'
+import { hasSupabaseEnv } from '@/lib/supabase/env'
 
 export async function middleware(request: NextRequest) {
+    if (!hasSupabaseEnv()) {
+        return NextResponse.next({
+            request: {
+                headers: request.headers,
+            },
+        })
+    }
+
     // Update session
     const response = await updateSession(request)
     const supabase = await createClient()

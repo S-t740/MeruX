@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -101,8 +102,15 @@ export function Sidebar({ className, onClose }: { className?: string; onClose?: 
                     </button>
                 )}
                 <Link href="/" onClick={onClose} className="font-outfit font-bold text-xl tracking-tight flex items-center gap-2 mr-8">
-                    <div className="w-8 h-8 rounded-lg bg-hub-indigo flex items-center justify-center text-white text-xs shadow-lg shadow-hub-indigo/20">MX</div>
-                    <span>Meru<span className="text-hub-indigo">X</span></span>
+                    <Image
+                        src="/brand/merux-lms-icon.svg"
+                        alt="Merux LMS"
+                        width={32}
+                        height={32}
+                        className="rounded-lg shadow-lg shadow-hub-indigo/20"
+                        priority
+                    />
+                    <span>Merux <span className="text-hub-indigo">LMS</span></span>
                 </Link>
 
                 <button

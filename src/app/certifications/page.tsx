@@ -63,7 +63,7 @@ export default function CertificationsPage() {
         <div className="space-y-12">
             <div className="page-header">
                 <h1 className="page-title">Credential Wallet</h1>
-                <p className="page-description">Manage and share your verifiable certificates and skill badges earned on the MeruX platform.</p>
+                <p className="page-description">Manage and share your verifiable certificates and skill badges earned on the Merux LMS platform.</p>
             </div>
 
             {/* Badges Section */}

@@ -1,0 +1,39 @@
+<svg viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <style>
+      .logo-text { fill: #0f172a; }
+      .tagline-text { fill: #64748b; }
+    </style>
+    <linearGradient id="sGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9333ea;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sAccent" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <g id="icon" transform="translate(80, 10)">
+    <circle cx="30" cy="40" r="8" fill="url(#sGradient)"/>
+    <circle cx="10" cy="20" r="5" fill="#4f46e5" opacity="0.8"/>
+    <circle cx="50" cy="18" r="5" fill="#9333ea" opacity="0.8"/>
+    <circle cx="54" cy="50" r="5" fill="#06b6d4" opacity="0.8"/>
+    <circle cx="8" cy="56" r="5" fill="#06b6d4" opacity="0.8"/>
+
+    <path d="M 30 40 Q 20 30 10 20" stroke="url(#sAccent)" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <path d="M 30 40 Q 40 28 50 18" stroke="url(#sGradient)" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <path d="M 30 40 Q 42 44 54 50" stroke="url(#sAccent)" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+    <path d="M 30 40 Q 18 48 8 56" stroke="url(#sGradient)" stroke-width="1.5" fill="none" opacity="0.6" stroke-linecap="round"/>
+  </g>
+
+  <text x="110" y="145" text-anchor="middle" font-family="'Outfit', 'Inter', sans-serif" font-size="44" font-weight="700" letter-spacing="-1">
+    <tspan class="logo-text">Merux</tspan>
+  </text>
+
+  <text x="110" y="168" text-anchor="middle" font-family="'Inter', sans-serif" font-size="12" font-weight="500" letter-spacing="0.4" class="tagline-text">
+    Learning Intelligence
+  </text>
+
+  <line x1="75" y1="180" x2="145" y2="180" stroke="url(#sGradient)" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
 import {
   ArrowRight,
@@ -24,13 +25,13 @@ import {
   Moon,
   Menu,
   X,
-  Sparkles,
   Zap,
   Globe,
   FlaskConical,
   UserCheck,
   ClipboardCheck,
   Layers,
+  Sparkles,
 } from "lucide-react";
 
 /* ─────────────────────── Animated Counter ─────────────────────── */
@@ -229,12 +230,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3 rounded-2xl bg-card/80 backdrop-blur-xl border border-border/60 shadow-lg shadow-black/5">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-hub-indigo to-hub-purple flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-outfit font-bold text-xl tracking-tight">
-              Meru<span className="gradient-text">X</span>
-            </span>
+            <Image
+              src={darkMode ? "/brand/merux-lms-logo-full-dark.svg" : "/brand/merux-lms-logo-full.svg"}
+              alt="Merux LMS"
+              width={200}
+              height={60}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Nav */}
@@ -318,7 +321,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hub-indigo opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-hub-indigo" />
             </span>
-            MeruX Platform Live
+            Merux LMS Platform Live
           </div>
 
           {/* Headline */}
@@ -393,7 +396,7 @@ export default function Home() {
             <ModuleCard
               icon={<Target className="w-6 h-6 text-hub-rose" />}
               title="Assessment Engine"
-              description="Multi-format quizzes, timed skill assessments, weighted scoring, and Cisco-style competency validation."
+              description="Multi-format quizzes, timed skill assessments, weighted scoring, and industry-standard competency validation."
               color="bg-hub-rose/10"
             />
             <ModuleCard
@@ -447,7 +450,7 @@ export default function Home() {
             <ModuleCard
               icon={<Shield className="w-6 h-6 text-hub-indigo" />}
               title="Multi-Role Dashboards"
-              description="Tailored experiences for students, instructors, researchers, mentors, reviewers, and administrators."
+              description="Tailored experiences for students, instructors, researchers, mentors, reviewers, and program teams."
               color="bg-hub-indigo/10"
             />
             <ModuleCard
@@ -577,17 +580,6 @@ export default function Home() {
               ]}
             />
             <RoleCard
-              icon={<Shield className="w-5 h-5 text-hub-rose" />}
-              title="Administrator"
-              accent="bg-hub-rose/10"
-              features={[
-                "Manage users, roles & permissions",
-                "Generate system-wide reports",
-                "Monitor platform analytics",
-                "Configure certifications & events",
-              ]}
-            />
-            <RoleCard
               icon={<Zap className="w-5 h-5 text-yellow-500" />}
               title="Reviewer"
               accent="bg-yellow-500/10"
@@ -614,7 +606,7 @@ export default function Home() {
               Ready to Join the <span className="gradient-text">Innovation Hub</span>?
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Whether you&apos;re a student, researcher, or industry mentor — MeruX has a place for you. Start your journey today.
+              Whether you&apos;re a student, researcher, or industry mentor — Merux LMS has a place for you. Start your journey today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <Link
@@ -641,11 +633,9 @@ export default function Home() {
             {/* Brand */}
             <div className="col-span-2 md:col-span-1 space-y-4">
               <Link href="/" className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-hub-indigo to-hub-purple flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
+                <img src="/brand/merux-lms-icon.svg" alt="Merux LMS" className="w-10 h-10" />
                 <span className="font-outfit font-bold text-xl tracking-tight">
-                  Meru<span className="gradient-text">X</span>
+                  Merux
                 </span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -703,7 +693,7 @@ export default function Home() {
                   { label: "Dashboard", href: "/dashboard" },
                   { label: "Analytics", href: "/analytics" },
                   { label: "Settings", href: "/settings" },
-                  { label: "Admin", href: "/admin" },
+                  { label: "Help Center", href: "/notifications" },
                 ].map((link) => (
                   <Link
                     key={link.href}

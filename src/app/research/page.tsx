@@ -78,7 +78,7 @@ export default function ResearchHub() {
                         <Database className="w-8 h-8 text-hub-purple" />
                         Research Hub
                     </h1>
-                    <p className="page-description max-w-2xl mt-2">Discover, collaborate, and publish academic research and datasets across the MeruX ecosystem.</p>
+                    <p className="page-description max-w-2xl mt-2">Discover, collaborate, and publish academic research and datasets across the Merux LMS ecosystem.</p>
                 </div>
 
                 <div className="flex gap-4">

@@ -1,6 +1,7 @@
 import { verifyCertificate } from "@/lib/actions/assessment";
 import { Award, CheckCircle2, Calendar, User, BookOpen, Star, Shield } from "lucide-react";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -35,10 +36,15 @@ export default async function CertificatePage({ params }: Props) {
                         {/* Logo / Brand */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="w-10 h-10 rounded-xl bg-hub-indigo/10 flex items-center justify-center text-hub-indigo">
-                                    <BookOpen className="w-5 h-5" />
-                                </div>
-                                <span className="font-outfit font-bold text-lg">MeruX Learn</span>
+                                <Image
+                                    src="/brand/merux-lms-icon.svg"
+                                    alt="Merux LMS"
+                                    width={40}
+                                    height={40}
+                                    className="rounded-xl"
+                                    priority
+                                />
+                                <span className="font-outfit font-bold text-lg">Merux LMS</span>
                             </div>
                             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold text-white bg-gradient-to-r ${gradeStyle.bg}`}>
                                 <Star className="w-4 h-4" />
@@ -110,7 +116,7 @@ export default async function CertificatePage({ params }: Props) {
                 <div>
                     <p className="font-bold text-sm text-hub-teal">Verified Certificate</p>
                     <p className="text-xs text-muted-foreground font-medium">
-                        This certificate was issued by MeruX Learn and is cryptographically verified via code <code className="font-mono">{data.certificate_code}</code>.
+                        This certificate was issued by Merux LMS and is cryptographically verified via code <code className="font-mono">{data.certificate_code}</code>.
                     </p>
                 </div>
             </div>

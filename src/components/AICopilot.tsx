@@ -96,7 +96,7 @@ export function AICopilot({ lessonId, courseId }: AICopilotProps) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-accent/30">
                 <div className="flex items-center gap-2 text-hub-indigo font-bold">
                     <BrainCircuit className="w-5 h-5" />
-                    MeruX Copilot
+                    Merux LMS Copilot
                 </div>
                 <button
                     onClick={() => setIsOpen(false)}

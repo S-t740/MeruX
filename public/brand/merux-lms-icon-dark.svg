@@ -1,0 +1,49 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <!-- Define gradients for dark mode -->
+  <defs>
+    <linearGradient id="darkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c084fc;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="darkAccent" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#818cf8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="darkGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background circle -->
+  <circle cx="60" cy="60" r="58" fill="#0f172a" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Icon: Connected nodes with flowing paths -->
+  <g id="icon">
+    <!-- Center node (learning hub) -->
+    <circle cx="60" cy="60" r="10" fill="url(#darkGradient)" filter="url(#darkGlow)"/>
+    
+    <!-- Connected learning nodes -->
+    <!-- Top-left node -->
+    <circle cx="35" cy="38" r="6" fill="#818cf8" opacity="0.85"/>
+    <!-- Top-right node -->
+    <circle cx="85" cy="32" r="6" fill="#c084fc" opacity="0.85"/>
+    <!-- Bottom-right node -->
+    <circle cx="88" cy="78" r="6" fill="#22d3ee" opacity="0.85"/>
+    <!-- Bottom-left node -->
+    <circle cx="32" cy="85" r="6" fill="#22d3ee" opacity="0.85"/>
+
+    <!-- Flowing connection paths -->
+    <path d="M 60 60 Q 48 50 35 38" stroke="url(#darkAccent)" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+    <path d="M 60 60 Q 72 45 85 32" stroke="url(#darkGradient)" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+    <path d="M 60 60 Q 74 69 88 78" stroke="url(#darkAccent)" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+    <path d="M 60 60 Q 46 72 32 85" stroke="url(#darkGradient)" stroke-width="2" fill="none" opacity="0.7" stroke-linecap="round"/>
+    
+    <!-- Pulse circles -->
+    <circle cx="60" cy="60" r="15" fill="none" stroke="url(#darkGradient)" stroke-width="1" opacity="0.4"/>
+    <circle cx="60" cy="60" r="22" fill="none" stroke="url(#darkGradient)" stroke-width="0.5" opacity="0.2"/>
+  </g>
+</svg>

@@ -14,12 +14,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabase = createClient();
+  const hasSupabaseEnv = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  const supabase = hasSupabaseEnv ? createClient() : null;
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasSupabaseEnv);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     const getSession = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -45,9 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const signOut = async () => {
+    if (!supabase) {
+      return;
+    }
+
     try {
       await supabase.auth.signOut();
       setSession(null);

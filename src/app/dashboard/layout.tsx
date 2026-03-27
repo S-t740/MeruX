@@ -1,11 +1,12 @@
 "use client"
 
 import { Sidebar } from "@/components/dashboard/sidebar";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { UserRole } from "@/types";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export default function DashboardLayout({
     children,
@@ -96,8 +97,15 @@ export default function DashboardLayout({
                 {/* Mobile Header */}
                 <header className="lg:hidden flex items-center justify-between p-4 border-b border-border/50 sticky top-0 z-40 bg-background/90 backdrop-blur-md">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-hub-indigo flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-hub-indigo/20">MX</div>
-                        <span className="font-outfit font-bold text-xl tracking-tight">Meru<span className="text-hub-indigo">X</span></span>
+                        <Image
+                            src="/brand/merux-lms-icon.svg"
+                            alt="Merux LMS"
+                            width={32}
+                            height={32}
+                            className="rounded-lg shadow-lg shadow-hub-indigo/20"
+                            priority
+                        />
+                        <span className="font-outfit font-bold text-xl tracking-tight">Merux <span className="text-hub-indigo">LMS</span></span>
                     </div>
                     <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-accent/50 hover:bg-accent rounded-lg transition-colors">
                         <Menu className="w-5 h-5 text-foreground" />

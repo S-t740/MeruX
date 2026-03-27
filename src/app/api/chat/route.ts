@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
         // 1. Fetch contextual information if lessonId exists
         let lessonContext = "";
-        let courseTitle = "MTIH Learn Course";
+        let courseTitle = "Merux LMS Course";
 
         if (lessonId && courseId) {
             const [lessonRes, courseRes] = await Promise.all([
@@ -34,7 +34,7 @@ ${lessonRes.data.content ? lessonRes.data.content.substring(0, 5000) : 'No speci
         }
 
         // 2. Define the System Prompt
-        const systemPrompt = `You are a helpful, expert AI Learning Copilot embedded inside MeruX (formerly MTIH Learn), an advanced Learning Management System.
+        const systemPrompt = `You are a helpful, expert AI Learning Copilot embedded inside Merux LMS by MeruTechHub, an advanced Learning Management System.
 Your job is to act as a private tutor for the student taking the course "${courseTitle}".
 
 Here is the context of the exact lesson they are looking at right now:

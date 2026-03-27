@@ -64,7 +64,7 @@ export default function Leaderboard() {
                         Platform Ecosystem
                     </div>
                     <h1 className="page-title">Global Leaderboard</h1>
-                    <p className="page-description">The most impactful learners, builders, and innovators on the MeruX network, ranked by total reputation score.</p>
+                    <p className="page-description">The most impactful learners, builders, and innovators on the Merux LMS network, ranked by total reputation score.</p>
                 </div>
             </div>
 

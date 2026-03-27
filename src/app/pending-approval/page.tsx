@@ -58,7 +58,7 @@ export default function PendingApprovalPage() {
                         </li>
                         <li className="flex items-start gap-3">
                             <span className="shrink-0 w-6 h-6 rounded-full bg-hub-indigo/10 text-hub-indigo flex items-center justify-center text-xs font-bold mt-0.5">3</span>
-                            Upon approval, you will gain full access to the MeruX dashboard.
+                            Upon approval, you will gain full access to the Merux LMS dashboard.
                         </li>
                     </ul>
                 </div>

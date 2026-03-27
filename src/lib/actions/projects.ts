@@ -40,7 +40,7 @@ export async function generateProjectIdeas(userId: string) {
 
         // 3. Prompt Gemini
         const systemPrompt = `
-You are an elite Startup Incubator and Project Manager at MeruX.
+    You are an elite Startup Incubator and Project Manager at Merux LMS.
 Your goal is to brainstorm 3 UNIQUE, impressive, and resume-building project ideas 
 for a student based exactly on their current capabilities.
 
