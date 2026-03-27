@@ -36,14 +36,20 @@ export default function StudentDashboard() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                const [enrollRes, certRes, progressRes, badgesRes, tokenRes, skillsRes, cohortsRes] = await Promise.all([
+                const [enrollRes, certRes, progressRes, badgesRes, tokenRes, skillsRes, cohortsRes, gradesRes] = await Promise.all([
                     supabase.from("course_enrollments").select("*, courses(*, modules(lessons(id)))").eq("user_id", user.id),
                     supabase.from("certifications").select("*").eq("user_id", user.id),
                     supabase.from("user_lesson_progress").select("course_id, lesson_id").eq("user_id", user.id),
                     supabase.from("badges").select("*").eq("user_id", user.id).order("awarded_at", { ascending: false }),
                     supabase.from("user_tokens").select("total_balance").eq("user_id", user.id).single(),
                     supabase.from("user_skills").select("level_score, skills(name, category)").eq("user_id", user.id),
-                    supabase.from("cohort_members").select("*, cohorts(*, courses(title))").eq("user_id", user.id)
+                    supabase.from("cohort_members").select("*, cohorts(*, courses(title))").eq("user_id", user.id),
+                    supabase
+                        .from("submissions")
+                        .select("id, created_at, assignments(title, max_score, courses(title)), grades(score, created_at)")
+                        .eq("user_id", user.id)
+                        .order("created_at", { ascending: false })
+                        .limit(20)
                 ]);
                 setBadges(badgesRes.data || []);
                 setTokenBalance(tokenRes.data?.total_balance || 0);
@@ -112,12 +118,11 @@ export default function StudentDashboard() {
                     setDeadlines(assignmentsData || []);
                 }
 
-                // Build grade summary (submissions table not in schema yet — placeholder)
-                const subs: any[] = [];
-                const gradedSubs = subs.filter((s: any) => s.grades && s.grades.length > 0);
+                const gradedSubs = (gradesRes.data || []).filter((submission: any) => submission.grades && submission.grades.length > 0);
                 setGrades(gradedSubs);
 
-                const avgScore = null; // Will be populated when assignment submissions table is added
+                const scores = gradedSubs.map((submission: any) => submission.grades[0]?.score).filter((score: any) => typeof score === "number");
+                const avgScore = scores.length > 0 ? Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length) : null;
 
                 setStats({
                     activeCourses: enrollments.length,

@@ -26,6 +26,7 @@ import { submitQuizAttempt } from "@/lib/actions/quiz";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from "isomorphic-dompurify";
 
 export default function LessonPlayerPage() {
     const { id, lessonId } = useParams();
@@ -46,6 +47,33 @@ export default function LessonPlayerPage() {
 
     // Telemetry tracking
     const startTimeRef = useRef<number>(0);
+
+    const isHtmlContent = (value: string) => /<\s*[a-z][\s\S]*>/i.test(value);
+
+    const renderLessonContent = (value: string) => {
+        if (!value) return null;
+
+        if (isHtmlContent(value)) {
+            const sanitizedContent = DOMPurify.sanitize(value, {
+                USE_PROFILES: { html: true },
+            });
+
+            return (
+                <div
+                    className="tiptap-rendered-content text-foreground/90 leading-relaxed font-medium"
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+                />
+            );
+        }
+
+        return (
+            <div className="text-foreground/90 leading-relaxed font-medium space-y-4">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {value}
+                </ReactMarkdown>
+            </div>
+        );
+    };
 
     useEffect(() => {
         startTimeRef.current = Date.now();
@@ -522,11 +550,7 @@ export default function LessonPlayerPage() {
                             <article className="prose prose-invert max-w-none pb-20">
                                 <div className="premium-card p-8 bg-accent/10 border-border/30 overflow-hidden">
                                     {lesson.content ? (
-                                        <div className="text-foreground/90 leading-relaxed font-medium space-y-4">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                {lesson.content}
-                                            </ReactMarkdown>
-                                        </div>
+                                        renderLessonContent(lesson.content)
                                     ) : (
                                         <p className="text-lg text-foreground/90 leading-relaxed font-medium">
                                             No detailed content available for this lesson. Please refer to the video and attached resources.

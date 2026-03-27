@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
     Plus, Trash2, GripVertical, BookOpen, FileText, ClipboardCheck,
@@ -10,6 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { cn } from "@/lib/utils";
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
 
 import { Suspense } from "react";
 
@@ -52,6 +53,33 @@ function CourseBuilderContent() {
         passing_score: 80,
         questions: [{ question_text: "", points: 10, options: [{ option_text: "", is_correct: true }, { option_text: "", is_correct: false }] }]
     });
+    const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+
+    const scrollPositionRef = useRef(0);
+    const contextHydratedRef = useRef(false);
+
+    const storageKey = courseId ? `course-builder-context:${courseId}` : "";
+
+    const captureScrollPosition = () => {
+        if (typeof window === "undefined") return;
+        scrollPositionRef.current = window.scrollY;
+    };
+
+    const restoreScrollPosition = () => {
+        if (typeof window === "undefined") return;
+        window.requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollPositionRef.current, behavior: "auto" });
+        });
+    };
+
+    const findModuleIdByLessonId = (lessonId: string) => {
+        for (const moduleItem of modules) {
+            if ((moduleItem.lessons || []).some((lesson: any) => lesson.id === lessonId)) {
+                return moduleItem.id as string;
+            }
+        }
+        return null;
+    };
 
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
@@ -82,7 +110,12 @@ function CourseBuilderContent() {
                 }
             });
             setModules(mods);
-            if (mods.length > 0) setExpandedModules([mods[0].id]);
+            setExpandedModules(prev => {
+                const valid = prev.filter(id => mods.some((m: any) => m.id === id));
+                if (valid.length > 0) return valid;
+                if (activeModuleId && mods.some((m: any) => m.id === activeModuleId)) return [activeModuleId];
+                return mods.length > 0 ? [mods[0].id] : [];
+            });
 
             setAssignments(assignmentsRes.data || []);
         } catch (err) {
@@ -90,13 +123,52 @@ function CourseBuilderContent() {
         } finally {
             setLoading(false);
         }
-    }, [courseId, supabase]);
+    }, [activeModuleId, courseId, supabase]);
+
+    useEffect(() => {
+        if (!storageKey || contextHydratedRef.current || typeof window === "undefined") return;
+        const raw = window.localStorage.getItem(storageKey);
+        if (!raw) {
+            contextHydratedRef.current = true;
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed.expandedModules)) setExpandedModules(parsed.expandedModules);
+            if (typeof parsed.activeModuleId === "string") setActiveModuleId(parsed.activeModuleId);
+            if (typeof parsed.showNewLesson === "string") setShowNewLesson(parsed.showNewLesson);
+            if (typeof parsed.showQuizEditor === "string") setShowQuizEditor(parsed.showQuizEditor);
+            if (typeof parsed.editingContentId === "string") setEditingContentId(parsed.editingContentId);
+            if (typeof parsed.scrollY === "number") scrollPositionRef.current = parsed.scrollY;
+        } catch (error) {
+            console.error("Failed to hydrate course builder context", error);
+        } finally {
+            contextHydratedRef.current = true;
+        }
+    }, [storageKey]);
+
+    useEffect(() => {
+        if (!storageKey || typeof window === "undefined") return;
+        window.localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+                expandedModules,
+                activeModuleId,
+                showNewLesson,
+                showQuizEditor,
+                editingContentId,
+                scrollY: scrollPositionRef.current,
+            })
+        );
+    }, [activeModuleId, editingContentId, expandedModules, showNewLesson, showQuizEditor, storageKey]);
 
     useEffect(() => { fetchCourseData(); }, [fetchCourseData]);
 
     const saveCourseInfo = async () => {
         if (!editCourseInfo.title.trim()) return;
         setSaving(true);
+        captureScrollPosition();
         try {
             const { error } = await supabase.from('courses').update({
                 title: editCourseInfo.title,
@@ -105,12 +177,13 @@ function CourseBuilderContent() {
             }).eq('id', courseId);
             if (error) throw error;
             setShowEditCourseInfo(false);
-            fetchCourseData();
+            setCourse((prev: any) => ({ ...prev, ...editCourseInfo }));
         } catch (err: any) {
             console.error("Save course info error:", err);
             alert(`Failed to update course info: ${err.message || JSON.stringify(err)}`);
         } finally {
             setSaving(false);
+            restoreScrollPosition();
         }
     };
 
@@ -147,81 +220,124 @@ function CourseBuilderContent() {
     const addModule = async () => {
         if (!newModule.title.trim()) return;
         setSaving(true);
+        captureScrollPosition();
         try {
-            const { error } = await supabase.from("modules").insert({
+            const { data, error } = await supabase.from("modules").insert({
                 course_id: courseId,
                 title: newModule.title,
                 description: newModule.description,
                 order_index: modules.length
-            });
+            }).select().single();
             if (error) throw error;
             setNewModule({ title: "", description: "" });
             setShowNewModule(false);
-            fetchCourseData();
-            fetchCourseData();
+            if (data) {
+                const nextModule = { ...data, lessons: [], quizzes: [], quiz: null };
+                setModules(prev => [...prev, nextModule]);
+                setExpandedModules(prev => [...new Set([...prev, nextModule.id])]);
+                setActiveModuleId(nextModule.id);
+            }
         } catch (err: any) { console.error(err); alert("Failed to add module: " + (err.message || JSON.stringify(err))); }
-        finally { setSaving(false); }
+        finally {
+            setSaving(false);
+            restoreScrollPosition();
+        }
     };
 
     const deleteModule = async (moduleId: string) => {
         if (!confirm("Delete this module and all its lessons?")) return;
+        captureScrollPosition();
         try {
             const { error } = await supabase.from("modules").delete().eq("id", moduleId);
             if (error) throw error;
-            fetchCourseData();
+            setModules(prev => prev.filter(mod => mod.id !== moduleId));
+            setExpandedModules(prev => prev.filter(id => id !== moduleId));
+            if (activeModuleId === moduleId) setActiveModuleId(null);
         } catch (err) { console.error(err); }
+        finally { restoreScrollPosition(); }
     };
 
     const updateModule = async (moduleId: string, updates: any) => {
+        captureScrollPosition();
         try {
             const { error } = await supabase.from("modules").update(updates).eq("id", moduleId);
             if (error) throw error;
             setEditingModuleId(null);
-            fetchCourseData();
+            setModules(prev => prev.map(mod => mod.id === moduleId ? { ...mod, ...updates } : mod));
+            setActiveModuleId(moduleId);
         } catch (err) { console.error(err); }
+        finally { restoreScrollPosition(); }
     };
 
     // --- LESSON CRUD ---
     const addLesson = async (moduleId: string) => {
         if (!newLesson.title.trim()) return;
         setSaving(true);
+        captureScrollPosition();
         const mod = modules.find(m => m.id === moduleId);
         try {
-            const { error } = await supabase.from("lessons").insert({
+            const { data, error } = await supabase.from("lessons").insert({
                 module_id: moduleId,
                 title: newLesson.title,
                 content: newLesson.content,
                 video_url: newLesson.video_url || null,
                 order_index: mod?.lessons?.length || 0
-            });
+            }).select().single();
             if (error) throw error;
             setNewLesson({ title: "", content: "", video_url: "", moduleId: "" });
             setShowNewLesson(null);
-            fetchCourseData();
-            fetchCourseData();
+            if (data) {
+                setModules(prev => prev.map(moduleItem => {
+                    if (moduleItem.id !== moduleId) return moduleItem;
+                    const lessons = [...(moduleItem.lessons || []), data];
+                    lessons.sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+                    return { ...moduleItem, lessons };
+                }));
+            }
+            setActiveModuleId(moduleId);
         } catch (err: any) { console.error(err); alert("Failed to add lesson: " + (err.message || JSON.stringify(err))); }
-        finally { setSaving(false); }
+        finally {
+            setSaving(false);
+            restoreScrollPosition();
+        }
     };
 
     const deleteLesson = async (lessonId: string) => {
         if (!confirm("Delete this lesson?")) return;
+        captureScrollPosition();
         try {
             const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
             if (error) throw error;
-            fetchCourseData();
+            const moduleId = findModuleIdByLessonId(lessonId);
+            setModules(prev => prev.map(moduleItem => ({
+                ...moduleItem,
+                lessons: (moduleItem.lessons || []).filter((lesson: any) => lesson.id !== lessonId),
+            })));
+            if (editingContentId === lessonId) setEditingContentId(null);
+            if (editingLessonId === lessonId) setEditingLessonId(null);
+            if (moduleId) setActiveModuleId(moduleId);
         } catch (err) { console.error(err); }
+        finally { restoreScrollPosition(); }
     };
 
     const updateLesson = async (lessonId: string, updates: any) => {
+        captureScrollPosition();
         try {
             const { error } = await supabase.from("lessons").update(updates).eq("id", lessonId);
             if (error) throw error;
             setEditingLessonId(null);
-            fetchCourseData();
+            const moduleId = findModuleIdByLessonId(lessonId);
+            setModules(prev => prev.map(moduleItem => ({
+                ...moduleItem,
+                lessons: (moduleItem.lessons || []).map((lesson: any) => lesson.id === lessonId ? { ...lesson, ...updates } : lesson),
+            })));
+            if (moduleId) setActiveModuleId(moduleId);
         } catch (err) { console.error(err); }
+        finally { restoreScrollPosition(); }
     };
 
     const saveLessonContent = async (lessonId: string) => {
+        captureScrollPosition();
         try {
             setSaving(true);
             const { error } = await supabase.from('lessons').update({
@@ -229,11 +345,21 @@ function CourseBuilderContent() {
                 video_url: editContentData.video_url
             }).eq('id', lessonId);
             if (error) throw error;
-            setEditingContentId(null);
-            fetchCourseData();
-            fetchCourseData();
+            const moduleId = findModuleIdByLessonId(lessonId);
+            setModules(prev => prev.map(moduleItem => ({
+                ...moduleItem,
+                lessons: (moduleItem.lessons || []).map((lesson: any) => lesson.id === lessonId ? {
+                    ...lesson,
+                    content: editContentData.content,
+                    video_url: editContentData.video_url,
+                } : lesson),
+            })));
+            if (moduleId) setActiveModuleId(moduleId);
         } catch (err: any) { console.error(err); alert("Failed to save content: " + (err.message || JSON.stringify(err))); }
-        finally { setSaving(false); }
+        finally {
+            setSaving(false);
+            restoreScrollPosition();
+        }
     };
 
     const moveModule = async (index: number, direction: 'up' | 'down') => {
@@ -289,6 +415,7 @@ function CourseBuilderContent() {
     // --- QUIZ CRUD ---
     const saveQuiz = async (moduleId: string) => {
         setSaving(true);
+        captureScrollPosition();
         try {
             // Filter out questions that have no text (allow instructor to save without filling every blank)
             const validQuestions = editingQuiz.questions.filter((q: any) => q.question_text.trim());
@@ -366,6 +493,8 @@ function CourseBuilderContent() {
             alert(error.message || "Failed to save quiz");
         } finally {
             setSaving(false);
+            setActiveModuleId(moduleId);
+            restoreScrollPosition();
         }
     };
 
@@ -374,17 +503,17 @@ function CourseBuilderContent() {
         if (!newAssignment.title.trim()) return;
         setSaving(true);
         try {
-            const { error } = await supabase.from("assignments").insert({
+            const { data, error } = await supabase.from("assignments").insert({
                 course_id: courseId,
                 title: newAssignment.title,
                 description: newAssignment.description,
                 due_date: newAssignment.due_date || null,
                 max_score: newAssignment.max_score
-            });
+            }).select().single();
             if (error) throw error;
             setNewAssignment({ title: "", description: "", due_date: "", max_score: 100 });
             setShowNewAssignment(false);
-            fetchCourseData();
+            if (data) setAssignments(prev => [...prev, data]);
         } catch (err) { console.error(err); alert("Failed to add assignment"); }
         finally { setSaving(false); }
     };
@@ -394,7 +523,7 @@ function CourseBuilderContent() {
         try {
             const { error } = await supabase.from("assignments").delete().eq("id", assignmentId);
             if (error) throw error;
-            fetchCourseData();
+            setAssignments(prev => prev.filter(assignment => assignment.id !== assignmentId));
         } catch (err) { console.error(err); }
     };
 
@@ -403,11 +532,12 @@ function CourseBuilderContent() {
             const { error } = await supabase.from("assignments").update(updates).eq("id", assignmentId);
             if (error) throw error;
             setEditingAssignmentId(null);
-            fetchCourseData();
+            setAssignments(prev => prev.map(assignment => assignment.id === assignmentId ? { ...assignment, ...updates } : assignment));
         } catch (err) { console.error(err); }
     };
 
     const toggleModule = (id: string) => {
+        setActiveModuleId(id);
         setExpandedModules(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
     };
 
@@ -582,15 +712,18 @@ function CourseBuilderContent() {
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button onClick={() => moveLesson(mod.id, lIdx, 'up')} disabled={lIdx === 0} className="p-1 hover:bg-accent rounded disabled:opacity-30"><ArrowUp className="w-3 h-3 text-muted-foreground" /></button>
                                                         <button onClick={() => moveLesson(mod.id, lIdx, 'down')} disabled={lIdx === mod.lessons.length - 1} className="p-1 hover:bg-accent rounded disabled:opacity-30"><ArrowDown className="w-3 h-3 text-muted-foreground" /></button>
-                                                        <button onClick={() => { setEditingContentId(lesson.id); setEditContentData({ content: lesson.content || "", video_url: lesson.video_url || "" }); }} className="p-1.5 hover:bg-accent rounded-lg transition-colors" title="Edit Content"><BookOpen className="w-3 h-3 text-hub-teal" /></button>
+                                                        <button onClick={() => { setActiveModuleId(mod.id); setEditingContentId(lesson.id); setEditContentData({ content: lesson.content || "", video_url: lesson.video_url || "" }); }} className="p-1.5 hover:bg-accent rounded-lg transition-colors" title="Edit Content"><BookOpen className="w-3 h-3 text-hub-teal" /></button>
                                                         <button onClick={() => setEditingLessonId(lesson.id)} className="p-1.5 hover:bg-accent rounded-lg transition-colors" title="Rename"><Pencil className="w-3 h-3 text-muted-foreground" /></button>
                                                         <button onClick={() => deleteLesson(lesson.id)} className="p-1.5 hover:bg-hub-rose/10 rounded-lg transition-colors" title="Delete"><Trash2 className="w-3 h-3 text-hub-rose" /></button>
                                                     </div>
                                                 </div>
                                                 {editingContentId === lesson.id && (
                                                     <div className="p-4 pl-14 space-y-3 bg-accent/5">
-                                                        <textarea value={editContentData.content} onChange={e => setEditContentData(p => ({ ...p, content: e.target.value }))}
-                                                            placeholder="Lesson content (markdown supported)..." rows={4} className="w-full bg-accent/30 border border-border/50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hub-teal/50 resize-y transition-all" />
+                                                        <RichTextEditor
+                                                            value={editContentData.content}
+                                                            onChange={(value) => setEditContentData(p => ({ ...p, content: value }))}
+                                                            placeholder="Write lesson content..."
+                                                        />
                                                         <input value={editContentData.video_url} onChange={e => setEditContentData(p => ({ ...p, video_url: e.target.value }))}
                                                             placeholder="Video URL (optional)..." className="w-full bg-accent/30 border border-border/50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hub-teal/50 transition-all" />
                                                         <div className="flex gap-2">
@@ -609,8 +742,11 @@ function CourseBuilderContent() {
                                             <div className="p-4 pl-14 space-y-3 bg-hub-teal/5 border-t border-hub-teal/20">
                                                 <input value={newLesson.title} onChange={e => setNewLesson(p => ({ ...p, title: e.target.value }))}
                                                     placeholder="Lesson title..." className="w-full bg-accent/30 border border-border/50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hub-teal/50 transition-all" />
-                                                <textarea value={newLesson.content} onChange={e => setNewLesson(p => ({ ...p, content: e.target.value }))}
-                                                    placeholder="Lesson content (markdown supported)..." rows={2} className="w-full bg-accent/30 border border-border/50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hub-teal/50 resize-none transition-all" />
+                                                <RichTextEditor
+                                                    value={newLesson.content}
+                                                    onChange={(value) => setNewLesson(p => ({ ...p, content: value }))}
+                                                    placeholder="Write lesson content..."
+                                                />
                                                 <input value={newLesson.video_url} onChange={e => setNewLesson(p => ({ ...p, video_url: e.target.value }))}
                                                     placeholder="Video URL (optional)..." className="w-full bg-accent/30 border border-border/50 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hub-teal/50 transition-all" />
                                                 <div className="flex gap-2">

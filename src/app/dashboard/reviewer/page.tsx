@@ -21,6 +21,7 @@ export default function ReviewerDashboard() {
     const supabase = createClient();
     const [assignments, setAssignments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ assignedProposals: 0, completedReviews: 0, avgReviewTime: "—" });
 
     useEffect(() => {
         const fetchReviewData = async () => {
@@ -28,14 +29,42 @@ export default function ReviewerDashboard() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
+                // Fetch assigned reviews
                 const { data, error } = await supabase
                     .from("research_projects")
                     .select("*, profiles:principal_investigator_id(*)")
-                    .neq("principal_investigator_id", user.id) // Placeholder for assigned reviews
+                    .neq("principal_investigator_id", user.id)
                     .limit(5);
 
                 if (error) throw error;
                 setAssignments(data || []);
+
+                // Fetch review feedback/submissions assigned to this reviewer
+                const { data: reviewData, error: reviewError } = await supabase
+                    .from("research_projects")
+                    .select("id, status, created_at")
+                    .neq("principal_investigator_id", user.id);
+
+                if (!reviewError && reviewData) {
+                    const assigned = reviewData.length;
+                    const completed = reviewData.filter(r => r.status === "approved").length;
+                    
+                    // Calculate average review time from timestamps
+                    const reviewTimes = reviewData
+                        .filter(r => r.status === "approved")
+                        .map(r => (new Date().getTime() - new Date(r.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                        .filter(t => t > 0);
+                    
+                    const avgTime = reviewTimes.length > 0 
+                        ? (reviewTimes.reduce((a, b) => a + b, 0) / reviewTimes.length).toFixed(1) 
+                        : "0";
+
+                    setStats({
+                        assignedProposals: assigned,
+                        completedReviews: completed,
+                        avgReviewTime: `${avgTime}d`
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching review data:", error);
             } finally {
@@ -68,9 +97,9 @@ export default function ReviewerDashboard() {
             {/* Workload Snapshot */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: "Assigned Proposals", value: "8", icon: FileText, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
-                    { label: "Completed Reviews", value: "24", icon: CheckCircle2, color: "text-hub-teal", bg: "bg-hub-teal/10" },
-                    { label: "Avg. Review Time", value: "3.2d", icon: Clock, color: "text-hub-rose", bg: "bg-hub-rose/10" },
+                    { label: "Assigned Proposals", value: stats.assignedProposals, icon: FileText, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
+                    { label: "Completed Reviews", value: stats.completedReviews, icon: CheckCircle2, color: "text-hub-teal", bg: "bg-hub-teal/10" },
+                    { label: "Avg. Review Time", value: stats.avgReviewTime, icon: Clock, color: "text-hub-rose", bg: "bg-hub-rose/10" },
                 ].map((stat, i) => (
                     <div key={i} className="premium-card p-8 flex flex-col justify-between h-36">
                         <div className="flex items-center justify-between">

@@ -40,11 +40,12 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
         try {
-            const [studentsRes, coursesRes, cohortsRes, membersRes] = await Promise.all([
+            const [studentsRes, coursesRes, cohortsRes, membersRes, enrollmentsRes] = await Promise.all([
                 supabase.from("profiles").select("id", { count: 'exact', head: true }).eq("role", "student"),
                 supabase.from("courses").select("id", { count: 'exact', head: true }).eq("status", "published"),
                 supabase.from("cohorts").select("*").order("created_at", { ascending: false }).limit(4),
-                supabase.from("cohort_members").select("cohort_id") // to count members per cohort
+                supabase.from("cohort_members").select("cohort_id, user_id"),
+                supabase.from("course_enrollments").select("course_id, user_id, status"),
             ]);
 
             const membersByCohort = (membersRes.data || []).reduce((acc: any, row) => {
@@ -52,19 +53,32 @@ export default function AdminDashboard() {
                 return acc;
             }, {});
 
+            const enrollments = enrollmentsRes.data || [];
+            const completionRate = enrollments.length > 0
+                ? `${Math.round((enrollments.filter((item: any) => item.status === "completed").length / enrollments.length) * 100)}%`
+                : "0%";
+
             setStats({
                 activeStudents: studentsRes.count || 0,
                 publishedCourses: coursesRes.count || 0,
-                activeCohorts: cohortsRes.data?.length || 0,
-                completionRate: "78%" // Could be calculated dynamically from certifications if needed
+                activeCohorts: (cohortsRes.data || []).filter((cohort: any) => !cohort.end_date || new Date(cohort.end_date) >= new Date()).length,
+                completionRate,
             });
 
-            const enrichedCohorts = (cohortsRes.data || []).map(c => ({
-                ...c,
-                students: membersByCohort[c.id] || 0,
-                progress: Math.floor(Math.random() * 100), // Mock progress for UI
-                status: new Date(c.end_date) < new Date() ? "Closed" : "Active"
-            }));
+            const enrichedCohorts = (cohortsRes.data || []).map(c => {
+                const cohortMembers = (membersRes.data || []).filter((member: any) => member.cohort_id === c.id).map((member: any) => member.user_id);
+                const relevantEnrollments = enrollments.filter((en: any) => cohortMembers.includes(en.user_id) && (!c.course_id || en.course_id === c.course_id));
+                const cohortProgress = relevantEnrollments.length > 0
+                    ? Math.round((relevantEnrollments.filter((en: any) => en.status === "completed").length / relevantEnrollments.length) * 100)
+                    : 0;
+
+                return {
+                    ...c,
+                    students: membersByCohort[c.id] || 0,
+                    progress: cohortProgress,
+                    status: c.end_date && new Date(c.end_date) < new Date() ? "Closed" : "Active"
+                };
+            });
 
             setCohorts(enrichedCohorts);
         } catch (error) {

@@ -20,6 +20,7 @@ export default function ResearcherDashboard() {
     const router = useRouter();
     const supabase = createClient();
     const [proposals, setProposals] = useState<any[]>([]);
+    const [stats, setStats] = useState({ collaborations: 0, publishedOutputs: 0 });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -34,7 +35,29 @@ export default function ResearcherDashboard() {
                     .eq("principal_investigator_id", user.id);
 
                 if (error) throw error;
-                setProposals(data || []);
+                const projectRows = data || [];
+                setProposals(projectRows);
+
+                const projectIds = projectRows.map((project: any) => project.id);
+                if (projectIds.length > 0) {
+                    const [membersRes, publicationsRes] = await Promise.all([
+                        supabase.from("research_members").select("project_id, user_id").in("project_id", projectIds),
+                        supabase.from("research_publications").select("id").in("research_id", projectIds),
+                    ]);
+
+                    const memberIds = new Set(
+                        (membersRes.data || [])
+                            .map((member: any) => member.user_id)
+                            .filter((memberId: string) => memberId !== user.id)
+                    );
+
+                    setStats({
+                        collaborations: memberIds.size,
+                        publishedOutputs: (publicationsRes.data || []).length,
+                    });
+                } else {
+                    setStats({ collaborations: 0, publishedOutputs: 0 });
+                }
             } catch (error) {
                 console.error("Error fetching research data:", error);
             } finally {
@@ -67,8 +90,8 @@ export default function ResearcherDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { label: "Active Projects", value: proposals.length, icon: Microscope, color: "text-hub-teal", bg: "bg-hub-teal/10" },
-                    { label: "Team Collaborations", value: "18", icon: Users, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
-                    { label: "Citations/Impact", value: "42", icon: TrendingUp, color: "text-hub-rose", bg: "bg-hub-rose/10" },
+                    { label: "Team Collaborations", value: stats.collaborations, icon: Users, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
+                    { label: "Published Outputs", value: stats.publishedOutputs, icon: TrendingUp, color: "text-hub-rose", bg: "bg-hub-rose/10" },
                 ].map((stat, i) => (
                     <div key={i} className="premium-card p-8 flex flex-col justify-between h-36">
                         <div className="flex items-center justify-between">

@@ -11,6 +11,8 @@ export default function AnalyticsPage() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [chartPeriod, setChartPeriod] = useState<"week" | "month">("week");
+    const [activity, setActivity] = useState({ weekBars: [] as number[], monthBars: [] as number[] });
+    const [skills, setSkills] = useState<{ skill: string; level: number; color: string }[]>([]);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -18,10 +20,12 @@ export default function AnalyticsPage() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                const [enrollRes, certRes, profileRes] = await Promise.all([
+                const [enrollRes, certRes, profileRes, progressRes, skillRes] = await Promise.all([
                     supabase.from("course_enrollments").select("*, courses(title)").eq("user_id", user.id),
                     supabase.from("certifications").select("*").eq("user_id", user.id),
                     supabase.from("profiles").select("*").eq("id", user.id).single(),
+                    supabase.from("user_lesson_progress").select("created_at").eq("user_id", user.id),
+                    supabase.from("user_skills").select("level_score, skills(name)").eq("user_id", user.id),
                 ]);
 
                 const enrollments = enrollRes.data || [];
@@ -34,6 +38,39 @@ export default function AnalyticsPage() {
                     profile: profileRes.data,
                     courses: enrollments.map(e => e.courses?.title).filter(Boolean),
                 });
+
+                const progressRows = progressRes.data || [];
+                const buildBars = (days: number) => {
+                    const now = new Date();
+                    const dayKeys = Array.from({ length: days }, (_, index) => {
+                        const date = new Date(now);
+                        date.setDate(now.getDate() - (days - 1 - index));
+                        return date.toISOString().slice(0, 10);
+                    });
+
+                    const counts = dayKeys.map((key) =>
+                        progressRows.filter((row: any) => (row.created_at || "").slice(0, 10) === key).length
+                    );
+                    const max = Math.max(...counts, 1);
+                    return counts.map((count) => Math.max(8, Math.round((count / max) * 100)));
+                };
+
+                setActivity({
+                    weekBars: buildBars(7),
+                    monthBars: buildBars(14),
+                });
+
+                const palette = ["bg-hub-indigo", "bg-hub-teal", "bg-hub-amber", "bg-hub-rose", "bg-hub-purple"];
+                const mappedSkills = (skillRes.data || [])
+                    .map((item: any, index: number) => ({
+                        skill: item.skills?.name || `Skill ${index + 1}`,
+                        level: Math.max(0, Math.min(100, item.level_score || 0)),
+                        color: palette[index % palette.length],
+                    }))
+                    .sort((a: any, b: any) => b.level - a.level)
+                    .slice(0, 6);
+
+                setSkills(mappedSkills);
             } catch (error) {
                 console.error("Error fetching analytics:", error);
             } finally {
@@ -48,22 +85,13 @@ export default function AnalyticsPage() {
     }
 
     // Dynamic bar heights based on week or month
-    const weekBars = [40, 70, 45, 90, 65, 80, 55];
-    const monthBars = [30, 55, 70, 45, 85, 60, 75, 40, 90, 65, 50, 80, 35, 70, 55, 45, 80, 60, 75, 90, 40, 65, 85, 50, 70, 45, 80, 60, 55, 75];
-    const bars = chartPeriod === "week" ? weekBars : monthBars.slice(0, 14);
+    const bars = chartPeriod === "week" ? activity.weekBars : activity.monthBars;
 
     const statCards = [
         { label: "Enrolled Courses", value: stats?.totalEnrollments ?? 0, icon: BookOpen, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
         { label: "Completion Rate", value: stats?.totalEnrollments > 0 ? `${Math.round((stats.completedCerts / stats.totalEnrollments) * 100)}%` : "0%", icon: CheckCircle2, color: "text-hub-teal", bg: "bg-hub-teal/10" },
         { label: "Certifications", value: stats?.completedCerts ?? 0, icon: Award, color: "text-hub-amber", bg: "bg-hub-amber/10" },
         { label: "Active Courses", value: stats?.activeCourses ?? 0, icon: Activity, color: "text-hub-rose", bg: "bg-hub-rose/10" },
-    ];
-
-    const skillData = [
-        { skill: "React Architecture", level: 85, color: "bg-hub-indigo" },
-        { skill: "Data Analysis", level: 60, color: "bg-hub-teal" },
-        { skill: "Technical Writing", level: 92, color: "bg-hub-amber" },
-        { skill: "Database Design", level: 75, color: "bg-hub-rose" },
     ];
 
     return (
@@ -141,7 +169,7 @@ export default function AnalyticsPage() {
                             <Zap className="w-5 h-5 text-hub-rose" /> Skill Proficiency
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {skillData.map((s, i) => (
+                            {skills.length > 0 ? skills.map((s, i) => (
                                 <div key={i} className="premium-card p-5 space-y-3">
                                     <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest">
                                         <span className="text-muted-foreground">{s.skill}</span>
@@ -151,7 +179,11 @@ export default function AnalyticsPage() {
                                         <div className={cn("h-full transition-all duration-1000", s.color)} style={{ width: `${s.level}%` }} />
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="md:col-span-2 premium-card p-6 text-center text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                    No skill analytics available yet.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

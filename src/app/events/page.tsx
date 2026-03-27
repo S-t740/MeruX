@@ -25,23 +25,20 @@ export default function EventsPage() {
     useEffect(() => {
         const fetchEvents = async () => {
             try {
-                const { data, error } = await supabase
-                    .from("events")
-                    .select("*, organizer:profiles!organizer_id(first_name, last_name)")
-                    .order("start_time", { ascending: true });
+                const [eventsRes, attendeesRes] = await Promise.all([
+                    supabase
+                        .from("events")
+                        .select("*, organizer:profiles!organizer_id(first_name, last_name)")
+                        .order("start_time", { ascending: true }),
+                    user
+                        ? supabase.from("event_attendees").select("event_id").eq("user_id", user.id)
+                        : Promise.resolve({ data: [], error: null } as any),
+                ]);
 
-                if (!error && data && data.length > 0) {
-                    setEvents(data);
-                } else {
-                    // Fallback demo data when DB has no events
-                    setEvents([
-                        { id: "demo-1", title: "AI Research Symposium", start_time: "2026-03-20T09:00:00Z", end_time: "2026-03-20T16:00:00Z", location: "Meru Innovation Hall", description: "Annual research showcase featuring machine learning and AI innovations.", type: "Research" },
-                        { id: "demo-2", title: "Startup Pitch Night", start_time: "2026-03-28T18:00:00Z", end_time: "2026-03-28T21:00:00Z", location: "Auditorium B", description: "Present your startup to a panel of investors and industry experts.", type: "Incubator" },
-                        { id: "demo-3", title: "Full-Stack Bootcamp Kickoff", start_time: "2026-04-03T08:30:00Z", end_time: "2026-04-03T12:00:00Z", location: "Lab 4", description: "Hands-on bootcamp covering React, Node.js, and Supabase integration.", type: "Workshop" },
-                        { id: "demo-4", title: "Ethics in Technology Seminar", start_time: "2026-04-10T14:00:00Z", end_time: "2026-04-10T16:30:00Z", location: "Conference Room A", description: "Exploring responsible AI development and institutional ethics frameworks.", type: "Seminar" },
-                        { id: "demo-5", title: "Innovation Hub Open Day", start_time: "2026-04-20T10:00:00Z", end_time: "2026-04-20T17:00:00Z", location: "MTIH Campus", description: "Open exploration of all incubation labs, research centers, and student projects.", type: "Other" },
-                    ]);
-                }
+                if (eventsRes.error) throw eventsRes.error;
+
+                setEvents(eventsRes.data || []);
+                setRegistered(new Set((attendeesRes.data || []).map((item: any) => item.event_id)));
             } catch (err) {
                 console.error("Error fetching events:", err);
             } finally {
@@ -55,9 +52,17 @@ export default function EventsPage() {
         if (!user) { alert("Please log in to register for events."); return; }
         setRegistering(eventId);
         try {
-            // Mark as registered (in a real app you'd insert into an event_registrations table)
-            await new Promise(r => setTimeout(r, 800)); // Simulate API call
+            const { error } = await supabase.from("event_attendees").upsert({
+                event_id: eventId,
+                user_id: user.id,
+                status: "registered",
+            }, { onConflict: "event_id,user_id" });
+
+            if (error) throw error;
             setRegistered(prev => new Set([...prev, eventId]));
+        } catch (error: any) {
+            console.error("Failed to register for event", error);
+            alert(error.message || "Failed to register for event.");
         } finally {
             setRegistering(null);
         }
@@ -152,6 +157,12 @@ export default function EventsPage() {
                         </div>
                     );
                 })}
+
+                {events.length === 0 && (
+                    <div className="col-span-full premium-card p-10 text-center border-dashed bg-accent/10 border-border text-muted-foreground text-xs font-bold uppercase tracking-widest">
+                        No upcoming events available.
+                    </div>
+                )}
             </div>
         </div>
     );

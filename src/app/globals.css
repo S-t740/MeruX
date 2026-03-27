@@ -214,3 +214,46 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30;
 }
+
+.tiptap-editor {
+  min-height: 160px;
+}
+
+.tiptap-editor:focus {
+  outline: none;
+}
+
+.tiptap-editor h1,
+.tiptap-rendered-content h1 {
+  @apply text-2xl font-bold mt-4 mb-2;
+}
+
+.tiptap-editor h2,
+.tiptap-rendered-content h2 {
+  @apply text-xl font-bold mt-4 mb-2;
+}
+
+.tiptap-editor h3,
+.tiptap-rendered-content h3 {
+  @apply text-lg font-bold mt-3 mb-1.5;
+}
+
+.tiptap-editor p,
+.tiptap-rendered-content p {
+  @apply my-2;
+}
+
+.tiptap-editor ul,
+.tiptap-rendered-content ul {
+  @apply list-disc pl-6 my-2;
+}
+
+.tiptap-editor ol,
+.tiptap-rendered-content ol {
+  @apply list-decimal pl-6 my-2;
+}
+
+.tiptap-editor a,
+.tiptap-rendered-content a {
+  @apply text-hub-indigo underline underline-offset-2;
+}

@@ -26,21 +26,35 @@ export default function SuperAdminDashboard() {
     const [stats, setStats] = useState({
         totalUsers: 0,
         activeSessions: 0,
-        dbSize: "450 MB",
+        dbSize: "—",
         uptime: "99.98%"
     });
 
     useEffect(() => {
         const fetchSystemData = async () => {
             try {
-                const { data, error } = await supabase
+                const { data: profilesData, error: profilesError } = await supabase
                     .from("profiles")
                     .select("*")
                     .order("created_at", { ascending: false });
 
-                if (error) throw error;
-                setProfiles(data || []);
-                setStats(prev => ({ ...prev, totalUsers: data?.length || 0 }));
+                if (profilesError) throw profilesError;
+                setProfiles(profilesData || []);
+
+                // Count active sessions (users with recent activity in last 24 hours)
+                const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+                const { data: activeSessions, error: sessionsError } = await supabase
+                    .from("profiles")
+                    .select("id")
+                    .gt("last_sign_in_at", yesterday);
+
+                const activeSessCount = activeSessions?.length || 0;
+
+                setStats(prev => ({ 
+                    ...prev, 
+                    totalUsers: profilesData?.length || 0,
+                    activeSessions: activeSessCount
+                }));
             } catch (error) {
                 console.error("Error fetching system data:", error);
             } finally {
@@ -76,7 +90,7 @@ export default function SuperAdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                     { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
-                    { label: "Active Sessions", value: "842", icon: Activity, color: "text-hub-teal", bg: "bg-hub-teal/10" },
+                    { label: "Active Sessions", value: stats.activeSessions, icon: Activity, color: "text-hub-teal", bg: "bg-hub-teal/10" },
                     { label: "Database Size", value: stats.dbSize, icon: Database, color: "text-hub-amber", bg: "bg-hub-amber/10" },
                     { label: "System Uptime", value: stats.uptime, icon: Server, color: "text-hub-rose", bg: "bg-hub-rose/10" },
                 ].map((stat, i) => (

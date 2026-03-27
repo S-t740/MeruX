@@ -1,15 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Database, Search, FileText, Users, BookmarkPlus, PlusCircle, Globe, Lock } from "lucide-react";
+import { Database, Search, FileText, BookmarkPlus, PlusCircle, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "@/lib/supabase/auth-context";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export default function ResearchHub() {
     const supabase = createClient();
-    const { user } = useAuth();
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -24,30 +21,7 @@ export default function ResearchHub() {
                     .order("created_at", { ascending: false });
 
                 if (error) throw error;
-
-                // Demo data fallback if none exist
-                if (!data || data.length === 0) {
-                    setProjects([
-                        {
-                            id: "demo-res-1",
-                            title: "AI-Driven Crop Yield Prediction in Semi-Arid Regions",
-                            abstract: "This study investigates the use of localized machine learning models to predict maize yields based on real-time soil sensing and satellite imagery in Meru County.",
-                            field: "AgriTech & AI",
-                            status: "published",
-                            pi: { first_name: "Dr. Evans", last_name: "Mwangi", department: "Computer Science" }
-                        },
-                        {
-                            id: "demo-res-2",
-                            title: "Decentralized Healthcare Records via Blockchain",
-                            abstract: "A prototype implementation of a private blockchain network for secure patient data exchange across rural clinics.",
-                            field: "HealthTech & Blockchain",
-                            status: "published",
-                            pi: { first_name: "Sarah", last_name: "Kiplagat", department: "Software Engineering" }
-                        }
-                    ]);
-                } else {
-                    setProjects(data);
-                }
+                setProjects(data || []);
             } catch (err) {
                 console.error("Error fetching research:", err);
             } finally {

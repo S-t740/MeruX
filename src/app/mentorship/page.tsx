@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Search, MapPin, GraduationCap, Clock, MessageSquare, Star, Loader2, Rocket } from "lucide-react";
+import { Search, GraduationCap, MessageSquare, Star, Loader2, Rocket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/auth-context";
-import { cn } from "@/lib/utils";
 
 export default function MentorshipPlatform() {
     const supabase = createClient();
@@ -22,27 +21,8 @@ export default function MentorshipPlatform() {
                     .select("*, profiles!user_id(*)")
                     .order("created_at", { ascending: false });
 
-                if (error) console.error("Error fetching mentors:", error);
-
-                // Demo data fallback if no mentors exist yet
-                if (!data || data.length === 0) {
-                    setMentors([
-                        {
-                            id: "demo-1",
-                            user_id: "demo-user-1",
-                            expertise_areas: ["AI/ML", "Software Engineering", "Startup Strategy"],
-                            profiles: { first_name: "Dr. Jane", last_name: "Doe", department: "Computer Science", bio: "Former Google Engineer, now leading AI research at MeruX." }
-                        },
-                        {
-                            id: "demo-2",
-                            user_id: "demo-user-2",
-                            expertise_areas: ["Product Management", "UI/UX", "Agile"],
-                            profiles: { first_name: "John", last_name: "Smith", department: "Innovation Hub", bio: "10+ years launching successful tech products across Africa." }
-                        }
-                    ]);
-                } else {
-                    setMentors(data);
-                }
+                if (error) throw error;
+                setMentors(data || []);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -56,11 +36,6 @@ export default function MentorshipPlatform() {
     const requestMentorship = async (mentorId: string) => {
         if (!user) {
             alert("Please log in to request mentorship.");
-            return;
-        }
-
-        if (mentorId.startsWith("demo-")) {
-            alert("This is a demo mentor. Cannot send request.");
             return;
         }
 
@@ -175,7 +150,7 @@ export default function MentorshipPlatform() {
                 {filteredMentors.length === 0 && (
                     <div className="lg:col-span-2 p-12 premium-card border-dashed bg-accent/10 text-center">
                         <GraduationCap className="w-8 h-8 text-muted-foreground opacity-20 mx-auto mb-2" />
-                        <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground">No mentors match your search criteria</p>
+                        <p className="text-xs uppercase tracking-widest font-bold text-muted-foreground">No mentors available for your search criteria</p>
                     </div>
                 )}
             </div>

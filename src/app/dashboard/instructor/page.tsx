@@ -20,12 +20,26 @@ import { cn } from "@/lib/utils";
 import { EngagementHeatmap } from "@/components/dashboard/EngagementHeatmap";
 import { getInstructorHeatmap } from "@/lib/actions/analytics";
 
+/* ─────────────────────── Stat Card Component ─────────────────────── */
+function StatCard({ icon: Icon, label, value, color, bg }: any) {
+    return (
+        <div className="premium-card p-8 flex flex-col justify-between h-36">
+            <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{label}</p>
+                <Icon className={cn("w-5 h-5", color)} />
+            </div>
+            <p className="text-3xl font-outfit font-bold">{value}</p>
+        </div>
+    );
+}
+
 export default function InstructorDashboard() {
     const router = useRouter();
     const supabase = createClient();
     const [courses, setCourses] = useState<any[]>([]);
     const [heatmapData, setHeatmapData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ totalStudents: 0, completionRate: 0, markingPending: 0 });
 
     useEffect(() => {
         const fetchInstructorData = async () => {
@@ -40,6 +54,27 @@ export default function InstructorDashboard() {
                 setCourses(data || []);
 
                 if (user) {
+                    // Fetch real stats from database
+                    const enrollmentsRes = await supabase
+                        .from("course_enrollments")
+                        .select("*, courses(instructor_id)")
+                        .eq("courses.instructor_id", user.id);
+                    
+                    const totalStudents = new Set(enrollmentsRes.data?.map(e => e.user_id)).size;
+                    const completed = enrollmentsRes.data?.filter(e => e.status === "completed").length || 0;
+                    const completionRate = enrollmentsRes.data?.length ? Math.round((completed / enrollmentsRes.data.length) * 100) : 0;
+
+                    // Fetch pending submissions/grading count
+                    const submissionsRes = await supabase
+                        .from("submissions")
+                        .select("id, grades(id)")
+                        .match({ "assignments.courses.instructor_id": user.id })
+                        .is("grades.id", null);
+                    
+                    const markingPending = submissionsRes.data?.filter(s => !s.grades || s.grades.length === 0).length || 0;
+
+                    setStats({ totalStudents, completionRate, markingPending });
+
                     const hData = await getInstructorHeatmap(user.id);
                     setHeatmapData(hData || []);
                 }
@@ -85,19 +120,27 @@ export default function InstructorDashboard() {
 
             {/* Performance Snapshot */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                    { label: "Active Students", value: "342", icon: Users, color: "text-hub-indigo", bg: "bg-hub-indigo/10" },
-                    { label: "Course Completion", value: "82%", icon: BarChart3, color: "text-hub-teal", bg: "bg-hub-teal/10" },
-                    { label: "Marking Pending", value: "12", icon: Clock, color: "text-hub-rose", bg: "bg-hub-rose/10" },
-                ].map((stat, i) => (
-                    <div key={i} className="premium-card p-8 flex flex-col justify-between h-36">
-                        <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</p>
-                            <stat.icon className={cn("w-5 h-5", stat.color)} />
-                        </div>
-                        <p className="text-3xl font-outfit font-bold">{stat.value}</p>
-                    </div>
-                ))}
+                <StatCard 
+                    icon={Users} 
+                    label="Active Students" 
+                    value={stats.totalStudents} 
+                    color="text-hub-indigo" 
+                    bg="bg-hub-indigo/10" 
+                />
+                <StatCard 
+                    icon={BarChart3} 
+                    label="Course Completion" 
+                    value={`${stats.completionRate}%`} 
+                    color="text-hub-teal" 
+                    bg="bg-hub-teal/10" 
+                />
+                <StatCard 
+                    icon={Clock} 
+                    label="Marking Pending" 
+                    value={stats.markingPending} 
+                    color="text-hub-rose" 
+                    bg="bg-hub-rose/10" 
+                />
             </div>
 
             {/* AI Heatmap Analytics */}

@@ -4,15 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Database, FileText, Download, Globe, Users, Calendar, Lock, Unlock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "@/lib/supabase/auth-context";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 export default function ResearchDetailPage() {
     const { id } = useParams();
     const router = useRouter();
     const supabase = createClient();
-    const { user } = useAuth();
 
     const [project, setProject] = useState<any>(null);
     const [datasets, setDatasets] = useState<any[]>([]);
@@ -30,33 +26,17 @@ export default function ResearchDetailPage() {
                     .eq("id", id)
                     .single();
 
-                if (projError && !String(id).startsWith("demo-")) throw projError;
+                if (projError) throw projError;
 
-                if (String(id).startsWith("demo-")) {
-                    setProject({
-                        id,
-                        title: "AI-Driven Crop Yield Prediction in Semi-Arid Regions",
-                        abstract: "This study investigates the use of localized machine learning models to predict maize yields based on real-time soil sensing and satellite imagery in Meru County. We compare Random Forest and XGBoost architectures against traditional agronomic models.",
-                        field: "AgriTech & AI",
-                        status: "published",
-                        created_at: new Date().toISOString(),
-                        pi: { first_name: "Dr. Evans", last_name: "Mwangi", department: "Computer Science", bio: "Lead AI Researcher at MeruX." }
-                    });
+                setProject(projectData);
 
-                    setDatasets([{ id: 1, title: "Meru_Soil_Data_2025.csv", visibility: "public", created_at: new Date().toISOString() }]);
-                    setPublications([{ id: 1, title: "Predictive Modeling of Maize Yields in Kenya", journal: "Journal of Arid Environments", url: "#", publication_date: new Date().toISOString() }]);
-                } else {
-                    setProject(projectData);
+                const [dsRes, pubRes] = await Promise.all([
+                    supabase.from("research_datasets").select("*").eq("research_id", id),
+                    supabase.from("research_publications").select("*").eq("research_id", id)
+                ]);
 
-                    // Fetch Datasets and Pubs
-                    const [dsRes, pubRes] = await Promise.all([
-                        supabase.from("research_datasets").select("*").eq("research_id", id),
-                        supabase.from("research_publications").select("*").eq("research_id", id)
-                    ]);
-
-                    setDatasets(dsRes.data || []);
-                    setPublications(pubRes.data || []);
-                }
+                setDatasets(dsRes.data || []);
+                setPublications(pubRes.data || []);
             } catch (err) {
                 console.error("Error fetching research details:", err);
             } finally {

@@ -15,7 +15,6 @@ import {
   Trophy,
   Calendar,
   Briefcase,
-  Bell,
   Shield,
   Code2,
   Lightbulb,
@@ -306,15 +305,21 @@ export default function Home() {
       </nav>
 
       {/* ───────────────── Hero Section ───────────────── */}
-      <section className="relative px-6 pt-32 pb-24 md:pt-44 md:pb-36 overflow-hidden">
-        {/* Background orbs */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="bg-orb top-[-80px] right-[-40px] w-[500px] h-[500px] bg-hub-indigo/20" />
-          <div className="bg-orb bottom-[-120px] left-[-80px] w-[600px] h-[600px] bg-hub-purple/15" />
-          <div className="bg-orb top-[200px] left-[40%] w-[300px] h-[300px] bg-hub-teal/10" />
-        </div>
+      <section className="relative px-6 pt-32 pb-24 md:pt-44 md:pb-36 overflow-hidden min-h-[600px] md:min-h-[700px]">
+        {/* Background image - absolute positioning */}
+        <Image
+          src="/brand/hero.jpg"
+          alt="Hero background"
+          fill
+          priority
+          quality={100}
+          className="absolute inset-0 object-cover -z-20 w-full h-full"
+          style={{ objectFit: "cover" }}
+        />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
 
-        <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-in">
+        <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-in relative z-10">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-hub-indigo/10 border border-hub-indigo/20 text-sm font-semibold text-hub-indigo">
             <span className="relative flex h-2 w-2">
@@ -413,8 +418,8 @@ export default function Home() {
             />
             <ModuleCard
               icon={<Rocket className="w-6 h-6 text-hub-purple" />}
-              title="Project Incubator"
-              description="Startup profiles, pitch deck management, milestone tracking, funding pipelines, and team collaboration."
+              title="AI Project Incubator"
+              description="Transform learner Skill DNA into real-world project pitches, then iterate with milestones, mentors, and launch-ready deliverables."
               color="bg-hub-purple/10"
             />
             <ModuleCard
@@ -452,12 +457,6 @@ export default function Home() {
               title="Multi-Role Dashboards"
               description="Tailored experiences for students, instructors, researchers, mentors, reviewers, and program teams."
               color="bg-hub-indigo/10"
-            />
-            <ModuleCard
-              icon={<Bell className="w-6 h-6 text-hub-amber" />}
-              title="Notifications & Reports"
-              description="Real-time alerts, weekly/monthly report generation, CSV/PDF exports, and system announcements."
-              color="bg-hub-amber/10"
             />
           </div>
         </div>
@@ -504,7 +503,7 @@ export default function Home() {
               step={4}
               icon={<Rocket className="w-7 h-7 text-hub-amber" />}
               title="Incubate"
-              description="Launch ventures in the startup incubator"
+              description="Turn learner progress into AI-guided venture ideas and launch tracks"
               color="bg-hub-amber/10"
             />
             <FlowStep
