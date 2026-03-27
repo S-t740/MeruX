@@ -22,11 +22,12 @@ import {
     Sun,
     Shield,
     ClipboardCheck,
-    Award
+    Award,
+    X
 } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 
-export function Sidebar() {
+export function Sidebar({ className, onClose }: { className?: string; onClose?: () => void }) {
     const pathname = usePathname();
     const router = useRouter();
     const supabase = createClient();
@@ -92,9 +93,14 @@ export function Sidebar() {
     };
 
     return (
-        <div className="w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col h-screen sticky top-0 z-50">
-            <div className="p-6 flex flex-col gap-6">
-                <Link href="/" className="font-outfit font-bold text-xl tracking-tight flex items-center gap-2">
+        <div className={cn("w-64 border-r border-border bg-card/50 backdrop-blur-xl flex flex-col h-screen sticky top-0 z-50 shrink-0 shadow-2xl lg:shadow-none", className)}>
+            <div className="p-6 flex flex-col gap-6 relative">
+                {onClose && (
+                    <button onClick={onClose} className="absolute top-6 right-6 lg:hidden p-2 -m-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
+                <Link href="/" onClick={onClose} className="font-outfit font-bold text-xl tracking-tight flex items-center gap-2 mr-8">
                     <div className="w-8 h-8 rounded-lg bg-hub-indigo flex items-center justify-center text-white text-xs shadow-lg shadow-hub-indigo/20">MX</div>
                     <span>Meru<span className="text-hub-indigo">X</span></span>
                 </Link>
@@ -123,6 +129,7 @@ export function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={onClose}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group text-sm font-medium",
                                 pathname === item.href

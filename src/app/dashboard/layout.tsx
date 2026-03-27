@@ -2,9 +2,10 @@
 
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { UserRole } from "@/types";
+import { Menu, X } from "lucide-react";
 
 export default function DashboardLayout({
     children,
@@ -12,10 +13,17 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const pathname = usePathname();
     const supabase = createClient();
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
     const [userRole, setUserRole] = useState<UserRole | null>(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Close mobile menu on route change
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [pathname]);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -64,14 +72,39 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="flex bg-background min-h-screen relative overflow-hidden">
+        <div className="flex bg-background min-h-[100dvh] relative overflow-hidden">
             {/* Background Decorations */}
-            <div className="bg-orb top-[-100px] right-[-100px] w-[500px] h-[500px] bg-hub-indigo/20" />
-            <div className="bg-orb bottom-[-100px] left-[200px] w-[600px] h-[600px] bg-hub-purple/15" />
+            <div className="fixed bg-orb top-[-100px] right-[-100px] w-[500px] h-[500px] bg-hub-indigo/20 pointer-events-none" />
+            <div className="fixed bg-orb bottom-[-100px] left-[200px] w-[600px] h-[600px] bg-hub-purple/15 pointer-events-none" />
 
-            <Sidebar />
-            <main className="flex-1 overflow-auto relative z-10">
-                <div className="p-8 max-w-7xl mx-auto">
+            {/* Desktop Sidebar */}
+            <Sidebar className="hidden lg:flex" />
+
+            {/* Mobile Sidebar Overlay */}
+            {isMobileMenuOpen && (
+                <div className="fixed inset-0 z-[100] flex lg:hidden">
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity" onClick={() => setIsMobileMenuOpen(false)} />
+                    {/* Sliding Panel */}
+                    <div className="relative flex w-[280px] max-w-[80vw] flex-col bg-card shadow-2xl animate-in slide-in-from-left duration-300">
+                        <Sidebar className="w-full flex h-[100dvh]" onClose={() => setIsMobileMenuOpen(false)} />
+                    </div>
+                </div>
+            )}
+
+            <main className="flex-1 overflow-x-hidden overflow-y-auto relative z-10 w-full flex flex-col h-[100dvh]">
+                {/* Mobile Header */}
+                <header className="lg:hidden flex items-center justify-between p-4 border-b border-border/50 sticky top-0 z-40 bg-background/90 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-hub-indigo flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-hub-indigo/20">MX</div>
+                        <span className="font-outfit font-bold text-xl tracking-tight">Meru<span className="text-hub-indigo">X</span></span>
+                    </div>
+                    <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-accent/50 hover:bg-accent rounded-lg transition-colors">
+                        <Menu className="w-5 h-5 text-foreground" />
+                    </button>
+                </header>
+
+                <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
                     {children}
                 </div>
             </main>
