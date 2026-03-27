@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Protected routes (everything except auth and home)
-    const isAuthPage = pathname.startsWith('/login')
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register')
     const isPublicPage = pathname === '/' || pathname.startsWith('/api/') || pathname.startsWith('/_next')
 
     if (!user && !isAuthPage && !isPublicPage) {
@@ -26,11 +26,23 @@ export async function middleware(request: NextRequest) {
     if (user) {
         const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, is_approved')
             .eq('id', user.id)
             .single()
 
         const role = profile?.role
+        // Only explicitly set false triggers pending. Null/undefined (legacy) or true means approved.
+        const isPending = profile?.is_approved === false;
+
+        // Pending Approval Trap
+        if (isPending && pathname !== '/pending-approval') {
+            return NextResponse.redirect(new URL('/pending-approval', request.url))
+        }
+
+        // Redirect away from pending if already approved
+        if (!isPending && pathname === '/pending-approval') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
 
         // Simple RBAC rules
         if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'super_admin') {

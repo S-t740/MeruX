@@ -50,6 +50,7 @@ export default function RegisterPage() {
             email: formData.get("email") as string,
             password: formData.get("password") as string,
             confirmPassword: formData.get("confirmPassword") as string,
+            role: formData.get("role") as string,
         };
 
         // Validate form data
@@ -64,6 +65,7 @@ export default function RegisterPage() {
                     data: {
                         first_name: validatedData.first_name,
                         last_name: validatedData.last_name,
+                        role: validatedData.role,
                     }
                 }
             });
@@ -178,6 +180,31 @@ export default function RegisterPage() {
                                     </p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-semibold text-hub-indigo/70 uppercase tracking-wider">Account Type</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {[
+                                    { value: 'student', label: 'Student' },
+                                    { value: 'mentor', label: 'Mentor' },
+                                    { value: 'instructor', label: 'Instructor' }
+                                ].map((roleOption) => (
+                                    <label key={roleOption.value} className="relative cursor-pointer group">
+                                        <input type="radio" name="role" value={roleOption.value} className="peer sr-only" defaultChecked={roleOption.value === 'student'} />
+                                        <div className="text-center px-2 py-3 bg-black/30 border border-white/20 rounded-xl peer-checked:bg-hub-indigo/20 peer-checked:border-hub-indigo peer-checked:text-white text-muted-foreground transition-all peer-focus:ring-2 peer-focus:ring-hub-indigo/50">
+                                            <span className="text-sm font-medium">{roleOption.label}</span>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                            {validationErrors.role && (
+                                <p className="text-sm text-red-400 mt-1 flex items-center gap-1 animate-shake">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {validationErrors.role}
+                                </p>
+                            )}
                         </div>
 
                         {/* Email Input */}
