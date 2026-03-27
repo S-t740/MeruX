@@ -5,11 +5,13 @@ import { Plus, Search, Filter, TrendingUp, Users, Target, Zap, Loader2, X, Check
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { cn } from "@/lib/utils";
+import { completeVentureAndAwardDna } from "@/lib/actions/projects";
 
 export default function IncubatorPage() {
     const { user } = useAuth();
     const supabase = createClient();
     const [projects, setProjects] = useState<any[]>([]);
+    const [userSkills, setUserSkills] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -22,9 +24,20 @@ export default function IncubatorPage() {
         try {
             const { data, error } = await supabase
                 .from("projects")
-                .select("*, mentor:profiles!mentor_id(first_name, last_name)")
+                .select("*, mentor:profiles!mentor_id(first_name, last_name), project_skills(skills(name))")
                 .order("created_at", { ascending: false });
             if (!error) setProjects(data || []);
+
+            if (user?.id) {
+                const { data: us } = await supabase.from('user_skills').select('skills(name)').eq('user_id', user.id);
+                if (us) {
+                    const skillsArray = us.map((u: any) => {
+                        const s = u.skills;
+                        return Array.isArray(s) ? s[0]?.name : s?.name;
+                    }).filter(Boolean);
+                    setUserSkills(skillsArray);
+                }
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -32,7 +45,23 @@ export default function IncubatorPage() {
         }
     };
 
-    useEffect(() => { fetchProjects(); }, [supabase]);
+    const handleComplete = async (projectId: string) => {
+        if (!user) return;
+        try {
+            const res = await completeVentureAndAwardDna(projectId, user.id);
+            if (res.error) {
+                alert(res.error);
+            } else {
+                setSuccessMsg("Venture completed! +200 Soft Skill DNA Awarded 🧬");
+                fetchProjects();
+                setTimeout(() => setSuccessMsg(""), 4000);
+            }
+        } catch (err: any) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => { fetchProjects(); }, [supabase, user?.id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,6 +72,7 @@ export default function IncubatorPage() {
                 title: formData.title,
                 description: formData.description,
                 status: formData.status,
+                owner_id: user.id
             });
             if (error) throw error;
             setSuccessMsg("Venture launched successfully!");
@@ -61,6 +91,14 @@ export default function IncubatorPage() {
         const matchSearch = search === "" || p.title?.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase());
         const matchStatus = statusFilter === "all" || p.status === statusFilter;
         return matchSearch && matchStatus;
+    });
+
+    const recommendedProjects = projects.filter(p => {
+        const reqSkills = p.project_skills?.map((ps: any) => {
+            const s = ps.skills;
+            return Array.isArray(s) ? s[0]?.name : s?.name;
+        }).filter(Boolean) || [];
+        return reqSkills.some((r: string) => userSkills.includes(r));
     });
 
     const statuses = ["all", "proposal", "approved", "in-progress", "completed"];
@@ -176,15 +214,32 @@ export default function IncubatorPage() {
                 ))}
             </div>
 
+            {/* Recommended Projects (Matchmaking) */}
+            {recommendedProjects.length > 0 && (
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-hub-amber" />
+                        <h2 className="text-xl font-outfit font-bold">Recommended For You</h2>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-hub-amber/10 text-hub-amber font-bold uppercase tracking-widest border border-hub-amber/20 hidden sm:inline-block">Skill DNA Match</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">These projects are looking for your specific skill set.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {recommendedProjects.slice(0, 3).map(project => (
+                            <ProjectCard key={`rec-${project.id}`} project={project} onComplete={handleComplete} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Project Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4 border-t border-border/50">
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-outfit font-bold">Active Projects</h2>
                         <span className="text-sm text-muted-foreground">{filtered.length} results</span>
                     </div>
                     {filtered.length > 0 ? filtered.map(project => (
-                        <ProjectCard key={project.id} project={project} />
+                        <ProjectCard key={project.id} project={project} onComplete={handleComplete} />
                     )) : (
                         <div className="premium-card p-20 text-center text-muted-foreground">
                             {search || statusFilter !== "all" ? "No matching projects." : "No projects yet. Be the first to launch!"}
@@ -223,7 +278,16 @@ const STATUS_COLORS: Record<string, string> = {
     completed: "bg-hub-rose/10 text-hub-rose",
 };
 
-function ProjectCard({ project }: { project: any }) {
+function ProjectCard({ project, onComplete }: { project: any, onComplete?: (id: string) => void }) {
+    const { user } = useAuth();
+    // Assuming 'owner_id' or 'user_id' establishes ownership for Gamification UI display
+    const isOwner = user?.id === project.user_id || user?.id === project.owner_id;
+
+    const reqSkills = project.project_skills?.map((ps: any) => {
+            const s = ps.skills;
+            return Array.isArray(s) ? s[0]?.name : s?.name;
+    }).filter(Boolean) || [];
+
     return (
         <div className="premium-card p-6 space-y-4 hover:shadow-lg transition-all group cursor-pointer">
             <div className="flex items-start justify-between gap-4">
@@ -235,11 +299,31 @@ function ProjectCard({ project }: { project: any }) {
                     {project.status}
                 </span>
             </div>
+            {reqSkills.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                    {reqSkills.map((s: string, idx: number) => (
+                        <span key={idx} className="text-[9px] px-2 py-0.5 rounded-md bg-accent text-muted-foreground border border-border/50">
+                            {s}
+                        </span>
+                    ))}
+                </div>
+            )}
             <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs text-muted-foreground">
                 <span>{(project.mentor?.first_name ? `${project.mentor?.first_name} ${project.mentor?.last_name || ''}`.trim() : "") ? `Mentor: ${(project.mentor.first_name ? `${project.mentor.first_name} ${project.mentor.last_name || ''}`.trim() : "")}` : "No mentor assigned"}</span>
-                <div className="flex items-center gap-1 text-hub-amber font-bold">
-                    <TrendingUp className="w-4 h-4" />
-                    View Details
+                <div className="flex items-center gap-3">
+                    {onComplete && isOwner && project.status !== 'completed' && project.status !== 'proposal' && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onComplete(project.id); }} 
+                            className="flex items-center gap-1 text-hub-teal font-bold hover:underline"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Finish & Get DNA
+                        </button>
+                    )}
+                    <div className="flex items-center gap-1 text-hub-amber font-bold">
+                        <TrendingUp className="w-4 h-4" />
+                        View Details
+                    </div>
                 </div>
             </div>
         </div>

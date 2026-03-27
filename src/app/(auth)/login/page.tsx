@@ -119,13 +119,13 @@ export default function LoginPage() {
                                     type="email"
                                     required
                                     placeholder=" "
-                                    className={`w-full bg-black/30 border px-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 transition-all text-base text-white placeholder:text-transparent font-medium peer ${validationErrors.email
+                                    className={`w-full bg-black/30 border px-4 pt-6 pb-2 rounded-xl focus:outline-none focus:ring-2 transition-all text-base text-white placeholder:text-transparent font-medium peer ${validationErrors.email
                                             ? "border-red-500/60 focus:ring-red-500/50 bg-red-500/5"
                                             : "border-white/20 focus:ring-hub-indigo/50 focus:border-hub-indigo/50 group-hover:border-white/30"
                                         }`}
                                 />
-                                <label className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-white pointer-events-none transition-all duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted-foreground peer-focus:top-2 peer-focus:text-sm peer-focus:text-hub-indigo flex items-center gap-2">
-                                    <User className="w-4 h-4 text-hub-indigo" />
+                                <label className="absolute left-4 top-2 -translate-y-0 text-xs font-semibold text-hub-indigo/70 pointer-events-none transition-all duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted-foreground peer-focus:top-2 peer-focus:-translate-y-0 peer-focus:text-xs peer-focus:text-hub-indigo flex items-center gap-2">
+                                    <User className="w-4 h-4" />
                                     Email Address
                                 </label>
                             </div>
@@ -145,13 +145,13 @@ export default function LoginPage() {
                                     type={showPassword ? "text" : "password"}
                                     required
                                     placeholder=" "
-                                    className={`w-full bg-black/30 border px-4 py-3.5 pr-12 rounded-xl focus:outline-none focus:ring-2 transition-all text-base text-white placeholder:text-transparent font-medium peer ${validationErrors.password
+                                    className={`w-full bg-black/30 border px-4 pt-6 pb-2 pr-12 rounded-xl focus:outline-none focus:ring-2 transition-all text-base text-white placeholder:text-transparent font-medium peer ${validationErrors.password
                                             ? "border-red-500/60 focus:ring-red-500/50 bg-red-500/5"
                                             : "border-white/20 focus:ring-hub-indigo/50 focus:border-hub-indigo/50 group-hover:border-white/30"
                                         }`}
                                 />
-                                <label className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-white pointer-events-none transition-all duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted-foreground peer-focus:top-2 peer-focus:text-sm peer-focus:text-hub-indigo flex items-center gap-2">
-                                    <Lock className="w-4 h-4 text-hub-indigo" />
+                                <label className="absolute left-4 top-2 -translate-y-0 text-xs font-semibold text-hub-indigo/70 pointer-events-none transition-all duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted-foreground peer-focus:top-2 peer-focus:-translate-y-0 peer-focus:text-xs peer-focus:text-hub-indigo flex items-center gap-2">
+                                    <Lock className="w-4 h-4" />
                                     Password
                                 </label>
                                 <button

@@ -66,6 +66,12 @@ export default function InstructorDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => router.push('/dashboard/instructor/cohorts')}
+                        className="px-6 py-3 bg-accent/30 rounded-xl font-bold flex items-center gap-2 border border-border/50 text-sm hover:bg-accent transition-all"
+                    >
+                        <Users className="w-4 h-4" /> Cohorts
+                    </button>
+                    <button
                         onClick={() => router.push('/dashboard/instructor/gradebook')}
                         className="px-6 py-3 bg-accent/30 rounded-xl font-bold flex items-center gap-2 border border-border/50 text-sm hover:bg-accent transition-all"
                     >

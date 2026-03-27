@@ -73,16 +73,24 @@ export default function StudentProjects() {
             if (ideaError) throw ideaError;
 
             // 2. Clone the AI Idea into the Global Startup Hub (projects table)
-            const { error: globalError } = await supabase
+            const { data: globalData, error: globalError } = await supabase
                 .from('projects')
                 .insert({
                     title: project.title,
                     description: project.problem_statement || project.description,
-                    status: 'in-progress' // Instantly active global venture
-                });
+                    status: 'in-progress', // Instantly active global venture
+                    owner_id: userId
+                }).select().single();
 
             if (globalError) {
                 console.error("Failed to sync with Global Hub:", globalError);
+            } else if (globalData) {
+                // Copy idea_skills to project_skills
+                const { data: ideaSkills } = await supabase.from('idea_skills').select('skill_id').eq('idea_id', projectId);
+                if (ideaSkills && ideaSkills.length > 0) {
+                    const mappedSkills = ideaSkills.map(s => ({ project_id: globalData.id, skill_id: s.skill_id }));
+                    await supabase.from('project_skills').insert(mappedSkills);
+                }
             }
 
             // Optimistic UI update

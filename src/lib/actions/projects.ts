@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { awardSkillPoints } from "./skills";
 
 // Use service role for backend admin actions
 const supabase = createClient(
@@ -49,14 +50,15 @@ Student Profile:
 
 Guidelines:
 1. Suggest exactly 3 projects.
-2. The projects should combine multiple skills they possess.
+2. The projects should combine multiple skills they possess AND identify missing required tech stacks.
 3. Return the response strictly as a JSON array of objects.
 4. Each object must have: 
    "title" (string, max 50 chars), 
    "problem_statement" (string, 1-2 sentences describing the problem being solved),
    "description" (string, 1-2 sentence pitch of the solution), 
    "difficulty" (string, enum: "Beginner", "Intermediate", "Advanced"), 
-   "estimated_hours" (number).
+   "estimated_hours" (number),
+   "required_skills" (array of strings, ONLY select from this exact list: ["Frontend Development", "Backend Systems", "UI/UX Design", "Data Analytics", "Project Management", "Artificial Intelligence", "Communication", "Problem Solving"]).
 Do not wrap your output in markdown formatting, just return valid JSON.
 `;
 
@@ -87,10 +89,61 @@ Do not wrap your output in markdown formatting, just return valid JSON.
         
         if (error) throw error;
         
+        // 5. Map and save required idea_skills
+        const skillNames = [...new Set(projects.flatMap((p: any) => p.required_skills || []))] as string[];
+        if (skillNames.length > 0) {
+            const { data: dbSkills } = await supabase.from('skills').select('id, name').in('name', skillNames);
+
+            if (dbSkills && dbSkills.length > 0) {
+                const ideaSkillsPayload: any[] = [];
+                data.forEach((idea: any, idx: number) => {
+                    const proj = projects[idx];
+                    const reqs = proj.required_skills || [];
+                    reqs.forEach((r: string) => {
+                        const matchedSkill = dbSkills.find(s => s.name === r);
+                        if (matchedSkill) {
+                            ideaSkillsPayload.push({ idea_id: idea.id, skill_id: matchedSkill.id });
+                        }
+                    });
+                });
+                if (ideaSkillsPayload.length > 0) {
+                    await supabase.from('idea_skills').insert(ideaSkillsPayload);
+                }
+            }
+        }
+        
         return { success: true, ideas: data };
 
     } catch (error: any) {
         console.error("Failed to generate project ideas:", error);
         return { error: error.message };
+    }
+}
+
+export async function completeVentureAndAwardDna(projectId: string, userId: string) {
+    if (!projectId || !userId) return { error: "Missing ID" };
+    try {
+        const { data: project, error: projError } = await supabase
+            .from('projects')
+            .update({ status: 'completed' })
+            .eq('id', projectId)
+            .select('id, title')
+            .single();
+
+        if (projError || !project) throw projError || new Error("Project not found");
+
+        const { data: skills } = await supabase.from('skills')
+            .select('id, name')
+            .in('name', ['Project Management', 'Communication', 'Problem Solving']);
+
+        if (skills) {
+            for (const s of skills) {
+                await awardSkillPoints(userId, s.id, 200, 'project_built', project.id);
+            }
+        }
+        return { success: true };
+    } catch(e: any) {
+        console.error("Complete venture error:", e);
+        return { error: e.message };
     }
 }

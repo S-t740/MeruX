@@ -13,17 +13,23 @@ export default function Leaderboard() {
     useEffect(() => {
         const fetchLeaders = async () => {
             try {
-                // Fetch top 50 users by reputation
+                // Fetch top 50 users by reputation (Students only)
                 const { data, error } = await supabase
                     .from('user_reputation')
-                    .select('score, rank_tier, profiles(id, full_name, username, avatar_url)')
+                    .select('score, rank_tier, profiles!inner(id, first_name, last_name, avatar_url)')
+                    .eq('profiles.role', 'student')
                     .order('score', { ascending: false })
                     .limit(50);
                 
-                if (error) throw error;
+                if (error) {
+                    // Table may not exist yet — silently fall back to empty state
+                    setLeaders([]);
+                    return;
+                }
                 setLeaders(data || []);
-            } catch (error) {
-                console.error(error);
+            } catch {
+                // Network or unexpected errors — fall back gracefully
+                setLeaders([]);
             } finally {
                 setLoading(false);
             }
@@ -76,25 +82,28 @@ export default function Leaderboard() {
                     </div>
                     
                     <div className="divide-y divide-border/30">
-                        {leaders.length > 0 ? leaders.map((leader, idx) => (
-                            <a key={leader.profiles.id} href={`/portfolio/${leader.profiles.username}`} className="grid grid-cols-[80px_1fr_150px_150px] gap-4 p-4 items-center hover:bg-accent/10 transition-colors group cursor-pointer">
+                        {leaders.length > 0 ? leaders.map((leader, idx) => {
+                            const profile = leader.profiles || {};
+                            const fullName = (profile.first_name ? profile.first_name + " " + (profile.last_name || "") : "Unknown User").trim();
+                            return (
+                            <a key={profile.id} href={`/portfolio/${profile.id}`} className="grid grid-cols-[80px_1fr_150px_150px] gap-4 p-4 items-center hover:bg-accent/10 transition-colors group cursor-pointer">
                                 <div className="flex justify-center items-center">
                                     {getRankIcon(idx)}
                                 </div>
                                 
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-xl bg-accent overflow-hidden border border-border/50 shrink-0">
-                                        {leader.profiles.avatar_url ? (
-                                            <img src={leader.profiles.avatar_url} alt={leader.profiles.full_name} className="w-full h-full object-cover" />
+                                        {profile.avatar_url ? (
+                                            <img src={profile.avatar_url} alt={fullName} className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-muted-foreground font-bold">
-                                                {leader.profiles.full_name?.charAt(0) || '?'}
+                                                {fullName.charAt(0)}
                                             </div>
                                         )}
                                     </div>
                                     <div>
-                                        <h3 className="font-outfit font-bold group-hover:text-hub-indigo transition-colors">{leader.profiles.full_name}</h3>
-                                        <p className="text-xs text-muted-foreground">@{leader.profiles.username}</p>
+                                        <h3 className="font-outfit font-bold group-hover:text-hub-indigo transition-colors">{fullName}</h3>
+                                        <p className="text-xs text-muted-foreground text-ellipsis overflow-hidden">@{profile.first_name?.toLowerCase() || profile.id?.split("-")[0]}</p>
                                     </div>
                                 </div>
 
@@ -110,7 +119,8 @@ export default function Leaderboard() {
                                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-500/20" />
                                 </div>
                             </a>
-                        )) : (
+                            );
+                        }) : (
                             <div className="p-12 text-center text-muted-foreground text-sm font-bold uppercase tracking-widest">
                                 No reputation data yet. Start learning to climb the leaderboard!
                             </div>

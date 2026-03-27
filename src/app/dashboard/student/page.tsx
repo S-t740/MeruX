@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     BookOpen, Award, Clock, CheckCircle2, PlayCircle, TrendingUp,
-    Calendar, ArrowRight, Star, ClipboardCheck, Gamepad2, BrainCircuit, Sparkles
+    Calendar, ArrowRight, Star, ClipboardCheck, Gamepad2, BrainCircuit, Sparkles, Users
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ export default function StudentDashboard() {
     const [tokenBalance, setTokenBalance] = useState<number>(0);
     const [skillData, setSkillData] = useState<{ subject: string; A: number; fullMark: number }[]>([]);
     const [stats, setStats] = useState({ activeCourses: 0, completedCerts: 0, avgScore: "—" });
+    const [myCohorts, setMyCohorts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Map badge name → image path
@@ -35,16 +36,18 @@ export default function StudentDashboard() {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
 
-                const [enrollRes, certRes, progressRes, badgesRes, tokenRes, skillsRes] = await Promise.all([
+                const [enrollRes, certRes, progressRes, badgesRes, tokenRes, skillsRes, cohortsRes] = await Promise.all([
                     supabase.from("course_enrollments").select("*, courses(*, modules(lessons(id)))").eq("user_id", user.id),
                     supabase.from("certifications").select("*").eq("user_id", user.id),
                     supabase.from("user_lesson_progress").select("course_id, lesson_id").eq("user_id", user.id),
                     supabase.from("badges").select("*").eq("user_id", user.id).order("awarded_at", { ascending: false }),
                     supabase.from("user_tokens").select("total_balance").eq("user_id", user.id).single(),
-                    supabase.from("user_skills").select("level_score, skills(name, category)").eq("user_id", user.id)
+                    supabase.from("user_skills").select("level_score, skills(name, category)").eq("user_id", user.id),
+                    supabase.from("cohort_members").select("*, cohorts(*, courses(title))").eq("user_id", user.id)
                 ]);
                 setBadges(badgesRes.data || []);
                 setTokenBalance(tokenRes.data?.total_balance || 0);
+                setMyCohorts(cohortsRes.data || []);
 
                 // Format Skills for Radar Chart
                 if (skillsRes.data) {
@@ -185,7 +188,7 @@ export default function StudentDashboard() {
                                 <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Top Identified Strengths</h3>
                                 {skillData.length > 0 ? (
                                     <div className="space-y-3">
-                                        {skillData.sort((a, b) => b.A - a.A).slice(0, 4).map((skill, idx) => (
+                                        {[...skillData].sort((a, b) => b.A - a.A).slice(0, 4).map((skill, idx) => (
                                             <div key={idx} className="space-y-1">
                                                 <div className="flex justify-between text-xs font-bold font-outfit">
                                                     <span>{skill.subject}</span>
@@ -314,8 +317,32 @@ export default function StudentDashboard() {
                     )}
                 </div>
 
-                {/* Sidebar: Upcoming Deadlines (now real data) */}
+                {/* Sidebar: Upcoming Deadlines & Cohorts */}
                 <div className="space-y-8">
+                    {/* My Cohorts Section */}
+                    {myCohorts.length > 0 && (
+                        <div className="premium-card p-8 space-y-6 bg-gradient-to-b from-hub-indigo/5 to-transparent border-hub-indigo/20">
+                            <h2 className="text-xl font-outfit font-bold flex items-center gap-2">
+                                <Users className="w-5 h-5 text-hub-indigo" /> My Cohorts
+                            </h2>
+                            <div className="space-y-4">
+                                {myCohorts.map((cm, i) => (
+                                    <div key={i} className="flex items-start gap-4 p-4 hover:bg-accent/30 rounded-2xl transition-all border border-border/50">
+                                        <div className="w-10 h-10 rounded-xl bg-hub-indigo/10 border border-hub-indigo/20 flex items-center justify-center shrink-0">
+                                            <Users className="w-5 h-5 text-hub-indigo" />
+                                        </div>
+                                        <div className="space-y-0.5 w-full">
+                                            <p className="text-sm font-bold font-outfit text-hub-indigo">{cm.cohorts?.name}</p>
+                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest line-clamp-1">
+                                                {cm.cohorts?.courses?.title || 'Enrolled Course'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="premium-card p-8 space-y-6">
                         <h2 className="text-xl font-outfit font-bold flex items-center gap-2">
                             <Calendar className="w-5 h-5 text-hub-rose" /> Next Deadlines

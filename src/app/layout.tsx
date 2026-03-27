@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} font-inter`}>
+      <body className={`${inter.variable} ${outfit.variable} font-inter`} suppressHydrationWarning>
         <AuthProvider>
           <div className="min-h-screen flex flex-col">
             {children}

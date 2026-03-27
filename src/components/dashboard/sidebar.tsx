@@ -58,12 +58,18 @@ export function Sidebar() {
         { icon: Rocket, label: "Project Lab", href: "/projects", roles: ['student', 'mentor', 'admin', 'super_admin'] },
         { icon: GraduationCap, label: "Mentorship", href: "/mentorship", roles: ['student', 'mentor', 'admin', 'super_admin'] },
         { icon: Award, label: "Certifications", href: "/certifications", roles: ['student', 'admin', 'super_admin'] },
+        // ─── Instructor Assessment Tools ───────────────────────────
         { icon: ClipboardCheck, label: "Gradebook", href: "/dashboard/instructor/gradebook", roles: ['instructor', 'admin', 'super_admin'] },
+        { icon: BookOpen, label: "Question Bank", href: "/dashboard/instructor/question-bank", roles: ['instructor', 'admin', 'super_admin'] },
+        { icon: ClipboardCheck, label: "Grade Assessments", href: "/dashboard/instructor/assessments", roles: ['instructor', 'admin', 'super_admin'] },
+        { icon: BarChart3, label: "Course Analytics", href: "/dashboard/instructor/analytics", roles: ['instructor', 'admin', 'super_admin'] },
+        // ──────────────────────────────────────────────────────────
         { icon: Shield, label: "System Auth", href: "/dashboard/super_admin", roles: ['super_admin'] },
-        { icon: BarChart3, label: "Analytics", href: "/analytics", roles: ['student', 'instructor', 'mentor', 'researcher', 'reviewer', 'admin', 'super_admin'] },
+        { icon: BarChart3, label: "Analytics", href: "/analytics", roles: ['student', 'mentor', 'researcher', 'reviewer'] },
         { icon: Bell, label: "Notifications", href: "/notifications", roles: ['student', 'instructor', 'mentor', 'researcher', 'reviewer', 'admin', 'super_admin'] },
         { icon: Settings, label: "Settings", href: "/settings", roles: ['student', 'instructor', 'mentor', 'researcher', 'reviewer', 'admin', 'super_admin'] },
     ];
+
 
     const filteredNavItems = navItems.filter(item => !role || item.roles.includes(role));
 

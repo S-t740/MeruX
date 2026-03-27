@@ -22,6 +22,7 @@ import { recordLessonAnalytics } from "@/lib/actions/analytics";
 import { awardReputation } from "@/lib/actions/reputation";
 import { createClient } from "@/lib/supabase/client";
 import { AICopilot } from "@/components/AICopilot";
+import { submitQuizAttempt } from "@/lib/actions/quiz";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -41,6 +42,7 @@ export default function LessonPlayerPage() {
     const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
     const [completing, setCompleting] = useState(false);
     const [courseCompleted, setCourseCompleted] = useState(false);
+    const [courseJustFinished, setCourseJustFinished] = useState<{ isNew: boolean } | null>(null);
 
     // Telemetry tracking
     const startTimeRef = useRef<number>(0);
@@ -143,7 +145,7 @@ export default function LessonPlayerPage() {
                         const moduleIds = courseRes.data.modules.map((m: any) => m.id);
                         const { data: quizData } = await supabase
                             .from("quizzes")
-                            .select("*, quiz_questions(*, quiz_options(*))")
+                            .select("*, quiz_questions(*, quiz_options(id, option_text))")
                             .in("module_id", moduleIds);
 
                         if (quizData) {
@@ -179,10 +181,10 @@ export default function LessonPlayerPage() {
                             .eq("user_id", user.id);
                             
                         quizSubsRes = await supabase
-                            .from("quiz_submissions")
-                            .select('quiz_id')
-                            .eq("user_id", user.id)
-                            .eq("passed", true);
+                            .from("quiz_attempts")
+                            .select('quiz_id, score, quizzes!inner(passing_score)')
+                            .eq("student_id", user.id)
+                            .eq("status", "graded");
                     }
                 } catch (_progressErr) {
                     // Table may not exist; ignore and continue
@@ -192,7 +194,10 @@ export default function LessonPlayerPage() {
                     setCompletedLessons(progressRes.data.map((p: any) => p.lesson_id));
                 }
                 if (quizSubsRes && quizSubsRes.data) {
-                    setCompletedQuizzes(quizSubsRes.data.map((q: any) => q.quiz_id));
+                    const passedQuizzes = quizSubsRes.data
+                        .filter((q: any) => q.score >= q.quizzes.passing_score)
+                        .map((q: any) => q.quiz_id);
+                    setCompletedQuizzes(passedQuizzes);
                 }
 
                 let authorized = false;
@@ -336,9 +341,9 @@ export default function LessonPlayerPage() {
                         // Award Reputation Points
                         await awardReputation(user.id, 50, `Completed Course: ${course.title}`);
 
-                        alert("🎉 Congratulations! You completed the course and earned 100 Learning Tokens, a new Badge, and Skill DNA/Reputation points!");
+                        setCourseJustFinished({ isNew: true });
                     } else {
-                        alert("🎉 Great job re-visiting your course material!");
+                        setCourseJustFinished({ isNew: false });
                     }
 
                     // Mark enrollment as completed (enables revisit mode)
@@ -353,8 +358,6 @@ export default function LessonPlayerPage() {
                 } catch (gamificationErr) {
                     console.error("Error awarding course completion gamification:", gamificationErr);
                 }
-
-                router.push(`/courses/${id}`);
             }
         } catch (error) {
             console.error("Error marking lesson complete:", error);
@@ -397,6 +400,45 @@ export default function LessonPlayerPage() {
                     >
                         Back to Syllabus
                     </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (courseJustFinished) {
+        return (
+            <div className="flex h-[calc(100vh-64px)] overflow-hidden -m-8 relative items-center justify-center bg-background/50">
+                <div className="premium-card p-12 text-center max-w-lg w-full space-y-6 flex flex-col items-center animate-in fade-in zoom-in duration-500 shadow-2xl">
+                    <div className="w-24 h-24 rounded-full bg-hub-teal/10 text-hub-teal flex items-center justify-center mb-4">
+                        <CheckCircle2 className="w-12 h-12" />
+                    </div>
+                    {courseJustFinished.isNew ? (
+                        <>
+                            <h2 className="text-3xl font-bold font-outfit text-foreground">Course Completed!</h2>
+                            <p className="text-muted-foreground font-medium text-lg leading-relaxed">
+                                🎉 Congratulations! You completed the course and earned <span className="text-hub-rose font-bold">100 Learning Tokens</span>, a new Badge, and Skill DNA points!
+                            </p>
+                            <div className="bg-hub-rose/10 border border-hub-rose/20 rounded-xl p-4 inline-flex items-center gap-3">
+                                <Gamepad2 className="w-5 h-5 text-hub-rose animate-pulse" />
+                                <span className="font-bold text-hub-rose">+100 Learning Tokens Earned!</span>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-3xl font-bold font-outfit text-foreground">Course Re-Visited!</h2>
+                            <p className="text-muted-foreground font-medium text-lg leading-relaxed">
+                                🎉 Great job re-visiting your course material!
+                            </p>
+                        </>
+                    )}
+                    <div className="pt-6 w-full">
+                        <button
+                            onClick={() => router.push(`/courses/${id}`)}
+                            className="w-full px-6 py-4 bg-hub-teal text-white hover:bg-hub-teal/90 rounded-xl font-bold tracking-wide transition-all shadow-xl shadow-hub-teal/20"
+                        >
+                            Return to Syllabus
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -662,15 +704,43 @@ function QuizView({ quiz, courseId }: { quiz: any; courseId: string }) {
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState<any>(null); // { score, passed, earned_tokens }
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
     useEffect(() => {
-        // Check if already passed
+        if (quiz?.time_limit && !result) {
+            setTimeLeft(quiz.time_limit * 60); // Assuming time_limit is in minutes
+        }
+    }, [quiz?.time_limit, result]);
+
+    useEffect(() => {
+        if (timeLeft === null || submitting || result) return;
+        
+        if (timeLeft <= 0) {
+            handleSubmit(true);
+            return;
+        }
+
+        const timer = setInterval(() => setTimeLeft(prev => prev !== null ? prev - 1 : null), 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, submitting, result]);
+
+    useEffect(() => {
         const checkExisting = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            const { data } = await supabase.from('quiz_submissions').select('*').eq('user_id', user.id).eq('quiz_id', quiz.id).order('score', { ascending: false }).limit(1);
-            if (data && data.length > 0 && data[0].passed) {
-                setResult(data[0]);
+            const { data } = await supabase.from('quiz_attempts')
+                .select('score, quizzes!inner(passing_score)')
+                .eq('student_id', user.id)
+                .eq('quiz_id', quiz.id)
+                .eq('status', 'graded')
+                .order('score', { ascending: false })
+                .limit(1);
+                
+            if (data && data.length > 0) {
+                const quiz_ = Array.isArray(data[0].quizzes) ? data[0].quizzes[0] : data[0].quizzes;
+                if (quiz_ && data[0].score >= quiz_.passing_score) {
+                    setResult({ passed: true, score: data[0].score, earned_tokens: 0 });
+                }
             }
         };
         checkExisting();
@@ -680,93 +750,28 @@ function QuizView({ quiz, courseId }: { quiz: any; courseId: string }) {
 
     const questions = quiz.quiz_questions;
 
-    const handleSubmit = async () => {
-        console.log("[QuizView] handleSubmit fired, answers:", answers);
-        if (Object.keys(answers).length < questions.length) {
+    const handleSubmit = async (isAutoSubmit?: boolean | React.SyntheticEvent) => {
+        const autoSubmit = isAutoSubmit === true;
+        if (Object.keys(answers).length < questions.length && !autoSubmit) {
             alert("Please answer all questions before submitting.");
             return;
         }
 
         setSubmitting(true);
         try {
-            const { data: { user }, error: authErr } = await supabase.auth.getUser();
-            console.log("[QuizView] user:", user?.id, "authErr:", authErr);
-            if (!user) { alert("Not authenticated. Please log in again."); return; }
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) { alert("Not authenticated."); return; }
 
-            // Calculate Score
-            let totalPoints = 0;
-            let earnedPoints = 0;
+            const res = await submitQuizAttempt(user.id, quiz.id, answers);
+            if (res.error) throw new Error(res.error);
 
-            questions.forEach((q: any) => {
-                totalPoints += q.points;
-                const selectedOptionId = answers[q.id];
-                const selectedOption = q.quiz_options.find((o: any) => o.id === selectedOptionId);
-                if (selectedOption && selectedOption.is_correct) {
-                    earnedPoints += q.points;
-                }
+            setResult({
+                passed: res.passed,
+                score: res.score,
+                earned_tokens: res.earnedTokens
             });
-
-            const scorePercent = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
-            const passed = scorePercent >= quiz.passing_score;
-            let earnedTokens = passed ? (questions.length * 10) : 0; // Simple calc: 10 tokens per question if passed
-
-            // Check if already passed to avoid double tokens
-            const { data: oldSubs } = await supabase.from('quiz_submissions').select('passed').eq('user_id', user.id).eq('quiz_id', quiz.id).eq('passed', true);
-            if (oldSubs && oldSubs.length > 0) {
-                earnedTokens = 0; // Already passed before, no new tokens
-            }
-
-            const sub = {
-                user_id: user.id,
-                quiz_id: quiz.id,
-                score: scorePercent,
-                passed,
-                earned_tokens: earnedTokens
-            };
-
-            console.log("[QuizView] submitting payload:", sub);
-            const { data: inserted, error } = await supabase.from('quiz_submissions').insert(sub).select().single();
-            console.log("[QuizView] insert result — data:", inserted, "error:", JSON.stringify(error));
-            if (error) throw new Error(`Quiz submission failed: ${error.message} (code: ${error.code}, hint: ${error.hint})`);
-
-            if (passed && earnedTokens > 0) {
-                // Award tokens
-                const { error: ttErr } = await supabase.from('token_transactions').insert({
-                    user_id: user.id,
-                    amount: earnedTokens,
-                    reason: `Passed Quiz: ${quiz.title}`
-                });
-                if (ttErr) console.error("token_transactions insert error:", ttErr.message);
-
-                // Update balance
-                const { data: balData } = await supabase.from('user_tokens').select('total_balance').eq('user_id', user.id).single();
-                if (balData) {
-                    const { error: utErr } = await supabase.from('user_tokens').update({ total_balance: balData.total_balance + earnedTokens }).eq('user_id', user.id);
-                    if (utErr) console.error("user_tokens update error:", utErr.message);
-                } else {
-                    const { error: utInsErr } = await supabase.from('user_tokens').insert({ user_id: user.id, total_balance: earnedTokens });
-                    if (utInsErr) console.error("user_tokens insert error:", utInsErr.message);
-                }
-
-                // Award Module Badge (soft-fail if schema doesn't have course_id)
-                try {
-                    const { data: existingBadge } = await supabase.from('badges').select('id').eq('user_id', user.id).eq('name', 'Module Master').limit(1);
-                    if (!existingBadge || existingBadge.length === 0) {
-                        const { error: badgeErr } = await supabase.from('badges').insert({
-                            user_id: user.id,
-                            name: 'Module Master',
-                            icon_url: 'award'
-                        });
-                        if (badgeErr) console.error("badge insert error:", badgeErr.message);
-                    }
-                } catch (badgeEx) {
-                    console.error("Badge awarding (soft-fail):", badgeEx);
-                }
-            }
-
-            setResult(inserted);
         } catch (error: any) {
-            console.error("Error submitting quiz:", error?.message || error);
+            console.error("Error submitting quiz:", error);
             alert(error?.message || "Failed to submit quiz.");
         } finally {
             setSubmitting(false);
@@ -811,7 +816,15 @@ function QuizView({ quiz, courseId }: { quiz: any; courseId: string }) {
                 <Gamepad2 className="w-4 h-4" /> Knowledge Check
             </div>
 
-            <p className="text-muted-foreground font-medium">Answer the following {questions.length} questions to test your knowledge. Passing score is {quiz.passing_score}%.</p>
+            <div className="flex items-center justify-between">
+                <p className="text-muted-foreground font-medium">Answer the following {questions.length} questions to test your knowledge. Passing score is {quiz.passing_score}%.</p>
+                {timeLeft !== null && (
+                    <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl font-bold border shrink-0", timeLeft < 60 ? "bg-hub-rose/10 text-hub-rose border-hub-rose/20 animate-pulse" : "bg-accent/20 text-foreground border-border/50")}>
+                        <Clock className="w-4 h-4" />
+                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                    </div>
+                )}
+            </div>
 
             <div className="space-y-8 pt-4">
                 {questions.map((q: any, idx: number) => (

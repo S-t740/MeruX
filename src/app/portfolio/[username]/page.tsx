@@ -32,11 +32,15 @@ export default function PublicPortfolio() {
                 const { data: prof, error: profErr } = await supabase
                     .from('profiles')
                     .select('*')
-                    .eq('username', username)
+                    .eq('id', username) // `username` parameter contains the user ID
                     .single();
                 
                 if (profErr || !prof) throw profErr || new Error("Profile not found");
-                setProfile(prof);
+                
+                // Polyfill full_name and username for UI support
+                const full_name = (prof.first_name ? prof.first_name + " " + (prof.last_name || "") : "Unknown User").trim();
+                const fake_username = prof.first_name?.toLowerCase() || prof.id?.split("-")[0];
+                setProfile({ ...prof, full_name, username: fake_username });
 
                 // 2. Fetch parallel data
                 const [repRes, skillRes, projRes, badgeRes] = await Promise.all([

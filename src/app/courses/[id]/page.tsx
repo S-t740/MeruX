@@ -34,13 +34,14 @@ export default function CourseDetailsPage() {
     const [enrolling, setEnrolling] = useState(false);
     const [progress, setProgress] = useState(0);
     const [enrolledCount, setEnrolledCount] = useState(0);
+    const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchCourse = async () => {
             try {
                 const { data: courseData, error: courseError } = await supabase
                     .from("courses")
-                    .select("*, modules(*, lessons(*)), assignments(*)")
+                    .select("*, modules(*, quizzes(*), lessons(*)), assignments(*)")
                     .eq("id", id)
                     .single();
 
@@ -93,6 +94,16 @@ export default function CourseDetailsPage() {
                         .select("lesson_id")
                         .eq("course_id", id)
                         .eq("user_id", currentUser.id);
+
+                    const { data: qData } = await supabase
+                        .from("quiz_attempts")
+                        .select("quiz_id, score, quizzes!inner(passing_score)")
+                        .eq("student_id", currentUser.id)
+                        .eq("status", "graded");
+                    
+                    if (qData) {
+                        setCompletedQuizzes(qData.filter((q: any) => q.score >= q.quizzes.passing_score).map((q: any) => q.quiz_id));
+                    }
 
                     let totalLessons = 0;
                     if (courseData.modules) {
@@ -280,19 +291,25 @@ export default function CourseDetailsPage() {
                         </p>
                     </div>
 
-                    <div className="space-y-4">
-                        {course.modules?.map((module: any, idx: number) => (
-                            <div key={module.id} className="premium-card overflow-hidden p-0">
+                    <div className="space-y-4">                        {course.modules?.map((module: any, idx: number) => {
+                            const prevModule = idx > 0 ? course.modules[idx - 1] : null;
+                            const isModuleLocked = hasActiveEnrollment && prevModule?.quizzes?.[0] && !completedQuizzes.includes(prevModule.quizzes[0].id);
+                            
+                            return (
+                            <div key={module.id} className={cn("premium-card overflow-hidden p-0 transition-opacity", isModuleLocked && "opacity-60")}>
                                 <button
                                     onClick={() => toggleModule(module.id)}
                                     className="w-full flex items-center justify-between p-6 hover:bg-accent/30 transition-all text-left group"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-8 h-8 rounded-lg bg-hub-indigo/10 flex items-center justify-center text-hub-indigo font-bold text-sm">
-                                            {idx + 1}
+                                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm", isModuleLocked ? "bg-accent text-muted-foreground" : "bg-hub-indigo/10 text-hub-indigo")}>
+                                            {isModuleLocked ? <Lock className="w-4 h-4" /> : idx + 1}
                                         </div>
                                         <div>
-                                            <h3 className="font-outfit font-bold group-hover:text-hub-indigo transition-colors">{module.title}</h3>
+                                            <h3 className="font-outfit font-bold group-hover:text-hub-indigo transition-colors flex items-center gap-2">
+                                                {module.title}
+                                                {isModuleLocked && <span className="text-[10px] bg-accent px-2 py-0.5 rounded-full text-muted-foreground uppercase tracking-widest font-bold">Locked</span>}
+                                            </h3>
                                             <p className="text-xs text-muted-foreground font-medium">{module.lessons?.length || 0} Lessons</p>
                                         </div>
                                     </div>
@@ -309,6 +326,10 @@ export default function CourseDetailsPage() {
                                             <button
                                                 key={lesson.id}
                                                 onClick={() => {
+                                                    if (isModuleLocked) {
+                                                        alert("Complete the previous module's Knowledge Check to unlock this module.");
+                                                        return;
+                                                    }
                                                     if (isAuthorized) {
                                                         router.push(`/courses/${id}/lessons/${lesson.id}`);
                                                     } else {
@@ -316,18 +337,18 @@ export default function CourseDetailsPage() {
                                                     }
                                                 }}
                                                 className={cn("w-full flex items-center justify-between p-5 transition-all text-left pl-14 group",
-                                                    isAuthorized ? "hover:bg-accent/50 cursor-pointer" : "opacity-75 cursor-not-allowed hover:bg-transparent"
+                                                    (isAuthorized && !isModuleLocked) ? "hover:bg-accent/50 cursor-pointer" : "opacity-75 cursor-not-allowed hover:bg-transparent"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    {!isAuthorized ? (
+                                                    {!isAuthorized || isModuleLocked ? (
                                                         <Lock className="w-4 h-4 text-muted-foreground" />
                                                     ) : lesson.video_url ? (
                                                         <PlayCircle className="w-4 h-4 text-hub-rose" />
                                                     ) : (
                                                         <FileText className="w-4 h-4 text-hub-teal" />
                                                     )}
-                                                    <span className={cn("text-sm font-medium transition-colors", isAuthorized && "group-hover:text-hub-indigo")}>
+                                                    <span className={cn("text-sm font-medium transition-colors", isAuthorized && !isModuleLocked && "group-hover:text-hub-indigo")}>
                                                         {lesson.title}
                                                     </span>
                                                 </div>
@@ -341,10 +362,46 @@ export default function CourseDetailsPage() {
                                                 </div>
                                             </button>
                                         ))}
+                                        
+                                        {module.quizzes?.[0] && (
+                                            <button
+                                                onClick={() => {
+                                                    if (isModuleLocked) {
+                                                        alert("Complete the previous module's Knowledge Check to unlock this module.");
+                                                        return;
+                                                    }
+                                                    if (isAuthorized) {
+                                                        router.push(`/courses/${id}/lessons/quiz?quizId=${module.quizzes[0].id}`);
+                                                    } else {
+                                                        alert("Please enroll in the course to take the quiz.");
+                                                    }
+                                                }}
+                                                className={cn("w-full flex items-center justify-between p-5 transition-all text-left pl-14 group border-t border-border/50",
+                                                    (isAuthorized && !isModuleLocked) ? "hover:bg-hub-rose/5 cursor-pointer" : "opacity-75 cursor-not-allowed hover:bg-transparent"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {!isAuthorized || isModuleLocked ? (
+                                                        <Lock className="w-4 h-4 text-muted-foreground" />
+                                                    ) : (
+                                                        <div className="w-4 h-4 rounded-sm bg-hub-rose/20 flex items-center justify-center">
+                                                            <div className="w-1.5 h-1.5 bg-hub-rose rounded-full" />
+                                                        </div>
+                                                    )}
+                                                    <span className={cn("text-sm font-bold transition-colors", isAuthorized && !isModuleLocked && "group-hover:text-hub-rose")}>
+                                                        Knowledge Check
+                                                    </span>
+                                                </div>
+                                                {completedQuizzes.includes(module.quizzes[0].id) && (
+                                                    <CheckCircle2 className="w-4 h-4 text-hub-rose" />
+                                                )}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        ))}
+                        );
+                        })}
                     </div>
                 </div>
 
