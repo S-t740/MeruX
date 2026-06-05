@@ -1,5 +1,5 @@
 -- ============================================================
--- SOMAFLOW ENTERPRISE EXTENSION — DATABASE SCHEMA MIGRATION
+-- MERUX ENTERPRISE EXTENSION — DATABASE SCHEMA MIGRATION
 -- Run this in the Supabase SQL Editor after the base LMS schema
 --
 -- ⚠️  IMPORTANT: Run this file in TWO separate steps:
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS public.learner_progress_snapshots (
 -- ─── 9. INSTITUTION SETTINGS ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.institution_settings (
     id                         uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    institution_name           text NOT NULL DEFAULT 'SomaFlow Institution',
+    institution_name           text NOT NULL DEFAULT 'MeruX Institution',
     plan_tier                  text DEFAULT 'free' CHECK (plan_tier IN ('free', 'starter', 'professional', 'enterprise')),
     max_learners               integer DEFAULT 25,
     max_tutors                 integer DEFAULT 2,
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS public.institution_settings (
 
 -- Insert default institution settings if none exist
 INSERT INTO public.institution_settings (institution_name, plan_tier)
-SELECT 'SomaFlow Institution', 'professional'
+SELECT 'MeruX Institution', 'professional'
 WHERE NOT EXISTS (SELECT 1 FROM public.institution_settings);
 
 -- ─── 10. ROW LEVEL SECURITY ───────────────────────────────────────────────────

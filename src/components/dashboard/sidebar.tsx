@@ -171,7 +171,7 @@ export function Sidebar({ className, onClose }: { className?: string; onClose?: 
                 <Link href="/" onClick={onClose} className="font-outfit font-bold text-xl tracking-tight flex items-center gap-2 mr-8">
                     <Image
                         src="/brand/merux-lms-icon.svg"
-                        alt="SomaFlow"
+                        alt="MeruX"
                         width={32}
                         height={32}
                         className="rounded-lg shadow-lg shadow-hub-indigo/20"

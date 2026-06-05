@@ -1,4 +1,4 @@
-// ─── SomaFlow Lesson JSON Types ───────────────────────────────────────────────
+// ─── MeruX Lesson JSON Types ───────────────────────────────────────────────
 
 export type BlockType =
   | 'heading'

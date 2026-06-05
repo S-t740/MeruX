@@ -152,7 +152,7 @@ export default function AILessonGeneratorPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${safeName}_somaflow.json`;
+        a.download = `${safeName}_merux.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -395,7 +395,7 @@ export default function AILessonGeneratorPage() {
                         )}
 
                         <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed">
-                            Powered by Gemini 2.5 Flash · SomaFlow Standardized JSON · Always review before publishing
+                            Powered by Gemini 2.5 Flash · MeruX Standardized JSON · Always review before publishing
                         </p>
                     </div>
                 </div>
@@ -418,7 +418,7 @@ export default function AILessonGeneratorPage() {
                             </div>
                             <div>
                                 <p className="font-bold font-outfit text-lg">Building Your Lesson...</p>
-                                <p className="text-sm text-muted-foreground mt-1">Generating a standardized 17-section SomaFlow lesson.</p>
+                                <p className="text-sm text-muted-foreground mt-1">Generating a standardized 17-section MeruX lesson.</p>
                             </div>
                             <div className="flex gap-1.5">
                                 {[0, 1, 2, 3].map(i => (

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
         // Build rich system prompt with learning context
         const contextParts: string[] = [
-            "You are the SomaFlow AI Teaching Assistant — a knowledgeable, encouraging, and pedagogically-aware learning companion.",
+            "You are the MeruX AI Teaching Assistant — a knowledgeable, encouraging, and pedagogically-aware learning companion.",
             "You are embedded directly inside a live virtual classroom session. Students ask you questions privately, without disrupting the class.",
             "",
             "Your role is to:",

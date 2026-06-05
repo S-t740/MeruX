@@ -46,8 +46,8 @@ export async function POST(req: Request) {
             return Response.json({ error: 'Raw notes must be at least 50 characters.' }, { status: 400 });
         }
 
-        // ── 3. Build SomaFlow Standardized JSON Prompt ─────────────────────────
-        const systemPrompt = `You are an expert instructional designer, curriculum architect, and content standardization specialist for a modern LMS called SomaFlow.
+        // ── 3. Build MeruX Standardized JSON Prompt ─────────────────────────
+        const systemPrompt = `You are an expert instructional designer, curriculum architect, and content standardization specialist for a modern LMS called MeruX.
 
 Your task is to transform raw instructor notes into a STRUCTURED INTERACTIVE LESSON as a single valid JSON object.
 
@@ -59,7 +59,7 @@ CRITICAL RULES:
 - Use double quotes only. No trailing commas.
 - Ensure all 17 required sections appear in the exact order specified.`;
 
-        const userPrompt = `Transform these raw instructor notes into the SomaFlow standardized lesson JSON.
+        const userPrompt = `Transform these raw instructor notes into the MeruX standardized lesson JSON.
 
 INPUTS:
 - Course Title: ${courseTitle}
@@ -144,7 +144,7 @@ OUTPUT: A single valid JSON object matching this EXACT schema. Follow the sectio
       { "text": "Quiz answers reviewed", "checked": false },
       { "text": "Lab task is feasible for students", "checked": false },
       { "text": "Estimated time is realistic", "checked": false },
-      { "text": "Lesson structure follows SomaFlow standard", "checked": true }
+      { "text": "Lesson structure follows MeruX standard", "checked": true }
     ] } }
   ]
 }
