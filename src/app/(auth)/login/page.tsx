@@ -8,10 +8,24 @@ import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginFormData, getErrorMessage } from "@/lib/validation";
 import { z } from "zod";
 
-export default function LoginPage() {
-    const router = useRouter();
+import { Suspense } from "react";
+
+function TimeoutAlert() {
     const searchParams = useSearchParams();
     const isTimeout = searchParams.get('reason') === 'timeout';
+
+    if (!isTimeout) return null;
+
+    return (
+        <div className="p-4 bg-hub-rose/15 border border-hub-rose/40 text-hub-rose-light text-sm rounded-xl flex items-start gap-3 shadow-lg shadow-hub-rose/10">
+            <Clock className="w-5 h-5 flex-shrink-0 mt-0.5 text-hub-rose" />
+            <span className="font-medium text-white">For your security, you have been logged out due to inactivity. Please log in again.</span>
+        </div>
+    );
+}
+
+export default function LoginPage() {
+    const router = useRouter();
     const supabase = createClient();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -87,12 +101,9 @@ export default function LoginPage() {
 
                 {/* Main Card with entrance animation */}
                 <div className="bg-gradient-to-b from-white/10 to-white/5 backdrop-blur-xl border border-white/20 p-8 rounded-2xl shadow-2xl space-y-6 animate-pop">
-                    {isTimeout && (
-                        <div className="p-4 bg-hub-rose/15 border border-hub-rose/40 text-hub-rose-light text-sm rounded-xl flex items-start gap-3 shadow-lg shadow-hub-rose/10">
-                            <Clock className="w-5 h-5 flex-shrink-0 mt-0.5 text-hub-rose" />
-                            <span className="font-medium text-white">For your security, you have been logged out due to inactivity. Please log in again.</span>
-                        </div>
-                    )}
+                    <Suspense fallback={null}>
+                        <TimeoutAlert />
+                    </Suspense>
 
                     {error && (
                         <div className="p-4 bg-red-500/15 border border-red-500/40 text-red-200 text-sm rounded-xl flex items-start gap-3 animate-shake">
