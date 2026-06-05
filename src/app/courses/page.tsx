@@ -17,6 +17,7 @@ export default function CourseManagement() {
     const [loading, setLoading] = useState(true);
     const [enrollingId, setEnrollingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [enrollmentStatus, setEnrollmentStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     // Create course modal state
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -60,7 +61,11 @@ export default function CourseManagement() {
     }, [user, supabase]);
 
     const handleEnroll = async (courseId: string) => {
-        if (!user) return;
+        if (!user) {
+            setEnrollmentStatus({ type: 'error', message: 'You must be logged in to enroll.' });
+            return;
+        }
+        setEnrollmentStatus(null);
         setEnrollingId(courseId);
         try {
             const { error } = await supabase.from("course_enrollments").insert({
@@ -70,9 +75,13 @@ export default function CourseManagement() {
             });
             if (error) throw error;
             setUserEnrollments(prev => [...prev, courseId]);
-        } catch (error) {
+            setEnrollmentStatus({ type: 'success', message: 'Successfully enrolled in the course!' });
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => setEnrollmentStatus(null), 3000);
+        } catch (error: any) {
             console.error("Enrollment failed:", error);
-            alert("Enrollment failed. Please try again.");
+            setEnrollmentStatus({ type: 'error', message: error.message || 'Enrollment failed. Please try again.' });
         } finally {
             setEnrollingId(null);
         }
@@ -165,6 +174,17 @@ export default function CourseManagement() {
                     </button>
                 )}
             </div>
+
+            {/* Enrollment Status Feedback */}
+            {enrollmentStatus && (
+                <div className={cn(
+                    "mb-8 p-4 rounded-xl border flex items-center gap-3 text-sm font-bold shadow-sm animate-in slide-in-from-top-2",
+                    enrollmentStatus.type === 'success' ? "bg-hub-teal/10 border-hub-teal/20 text-hub-teal" : "bg-hub-rose/10 border-hub-rose/20 text-hub-rose"
+                )}>
+                    {enrollmentStatus.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                    {enrollmentStatus.message}
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row items-center gap-4 bg-card/30 p-4 rounded-2xl border border-border/50">
                 <div className="relative flex-1 w-full">

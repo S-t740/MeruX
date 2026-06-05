@@ -14,7 +14,8 @@ import {
     CheckCircle2,
     Lock,
     Award,
-    Settings
+    Settings,
+    X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -166,11 +167,14 @@ export default function CourseDetailsPage() {
         }
     }, [id, supabase]);
 
+    const [enrollmentStatus, setEnrollmentStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
     const handleEnroll = async () => {
         if (!user) {
-            alert("Please log in to enroll.");
+            setEnrollmentStatus({ type: 'error', message: "Please log in to enroll." });
             return;
         }
+        setEnrollmentStatus(null);
         setEnrolling(true);
         try {
             const { error } = await supabase.from("course_enrollments").insert({
@@ -181,10 +185,13 @@ export default function CourseDetailsPage() {
             if (error) throw error;
             setIsAuthorized(true);
             setHasActiveEnrollment(true);
-            alert("Successfully enrolled in the course!");
-        } catch (error) {
+            setEnrollmentStatus({ type: 'success', message: "Successfully enrolled in the course!" });
+            
+            // Auto dismiss after 3 seconds
+            setTimeout(() => setEnrollmentStatus(null), 3000);
+        } catch (error: any) {
             console.error("Enrollment failed:", error);
-            alert("Enrollment failed. Please try again.");
+            setEnrollmentStatus({ type: 'error', message: error.message || "Enrollment failed. Please try again." });
         } finally {
             setEnrolling(false);
         }
@@ -421,6 +428,16 @@ export default function CourseDetailsPage() {
                         </div>
 
                         <div className="space-y-4 pt-4">
+                            {enrollmentStatus && (
+                                <div className={cn(
+                                    "p-3 rounded-xl border text-xs font-bold flex items-start gap-2 shadow-sm",
+                                    enrollmentStatus.type === 'success' ? "bg-hub-teal/10 border-hub-teal/20 text-hub-teal" : "bg-hub-rose/10 border-hub-rose/20 text-hub-rose"
+                                )}>
+                                    {enrollmentStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <X className="w-4 h-4 shrink-0 mt-0.5" />}
+                                    <span className="leading-tight">{enrollmentStatus.message}</span>
+                                </div>
+                            )}
+                            
                             {!isAuthorized ? (
                                 <button
                                     onClick={handleEnroll}
