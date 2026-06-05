@@ -18,12 +18,14 @@ export async function getPendingApprovals() {
     // Fetch pending profiles
     const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email, role, created_at')
+        .select('id, first_name, last_name, role, created_at')
         .eq('is_approved', false)
         .order('created_at', { ascending: false })
 
     return { data, error: error?.message }
 }
+
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 export async function approveUser(userId: string) {
     const supabase = await createClient()
@@ -36,7 +38,13 @@ export async function approveUser(userId: string) {
         return { success: false, error: 'Forbidden' }
     }
 
-    const { error } = await supabase
+    // Use Service Role key to bypass RLS for updating other users' profiles
+    const adminSupabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { error } = await adminSupabase
         .from('profiles')
         .update({ is_approved: true })
         .eq('id', userId)
@@ -58,11 +66,13 @@ export async function rejectUser(userId: string) {
         return { success: false, error: 'Forbidden' }
     }
 
-    // In a real system you might delete the auth.users account using the admin API 
-    // or set a 'rejected' status. Here we'll just delete the profile which acts as a hard block.
-    // However, since we don't have rpc to delete auth.user purely from frontend server action easily,
-    // we can just delete from public.profiles, removing their dashboard access altogether.
-    const { error } = await supabase
+    // Use Service Role key to bypass RLS
+    const adminSupabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { error } = await adminSupabase
         .from('profiles')
         .delete()
         .eq('id', userId)

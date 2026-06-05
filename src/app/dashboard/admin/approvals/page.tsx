@@ -124,7 +124,6 @@ export default function AdminApprovalsPage() {
                                             {user.role}
                                         </span>
                                     </h3>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
                                     <p className="text-xs text-muted-foreground/70 flex items-center gap-1 mt-1">
                                         <Clock className="w-3 h-3" /> Requested {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
                                     </p>

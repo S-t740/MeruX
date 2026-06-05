@@ -48,9 +48,9 @@ export default function RegisterPage() {
             first_name: formData.get("first_name") as string,
             last_name: formData.get("last_name") as string,
             email: formData.get("email") as string,
-            password: formData.get("password") as string,
             confirmPassword: formData.get("confirmPassword") as string,
             role: formData.get("role") as string,
+            agreeTerms: formData.get("agreeTerms") as string,
         };
 
         // Validate form data
@@ -92,15 +92,15 @@ export default function RegisterPage() {
 
     return (
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 relative overflow-hidden min-h-screen bg-gradient-to-br from-[#1a1a2e] via-[#23234b] to-[#0f3460]">
-            {/* Animated Background Orbs */}
-            <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-hub-indigo/15 blur-[150px] rounded-full animate-pulse animate-float" />
-            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-hub-purple/15 blur-[150px] rounded-full animate-pulse animate-float" style={{ animationDelay: "1s" }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-hub-rose/10 blur-[120px] rounded-full animate-float" style={{ animationDelay: "2s" }} />
+            {/* Animated Background Orbs — pointer-events-none so they never block clicks */}
+            <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-hub-indigo/15 blur-[150px] rounded-full animate-pulse animate-float pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-hub-purple/15 blur-[150px] rounded-full animate-pulse animate-float pointer-events-none" style={{ animationDelay: "1s" }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-hub-rose/10 blur-[120px] rounded-full animate-float pointer-events-none" style={{ animationDelay: "2s" }} />
 
             {/* Back to Login Link with fade-in */}
             <Link
                 href="/login"
-                className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-hub-indigo transition-all group animate-fade-in"
+                className="absolute top-8 left-8 z-20 flex items-center gap-2 text-sm text-muted-foreground hover:text-hub-indigo transition-all group animate-fade-in"
             >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 Back to Login
@@ -182,22 +182,32 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
-                        {/* Role Selection */}
-                        <div className="space-y-3">
-                            <label className="text-xs font-semibold text-hub-indigo/70 uppercase tracking-wider">Account Type</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {[
-                                    { value: 'student', label: 'Student' },
-                                    { value: 'mentor', label: 'Mentor' },
-                                    { value: 'instructor', label: 'Instructor' }
-                                ].map((roleOption) => (
-                                    <label key={roleOption.value} className="relative cursor-pointer group">
-                                        <input type="radio" name="role" value={roleOption.value} className="peer sr-only" defaultChecked={roleOption.value === 'student'} />
-                                        <div className="text-center px-2 py-3 bg-black/30 border border-white/20 rounded-xl peer-checked:bg-hub-indigo/20 peer-checked:border-hub-indigo peer-checked:text-white text-muted-foreground transition-all peer-focus:ring-2 peer-focus:ring-hub-indigo/50">
-                                            <span className="text-sm font-medium">{roleOption.label}</span>
-                                        </div>
-                                    </label>
-                                ))}
+                        {/* Role Selection — Dropdown */}
+                        <div className="space-y-2 relative">
+                            <select
+                                name="role"
+                                required
+                                defaultValue=""
+                                className={`w-full bg-black/30 border px-4 pt-6 pb-2 rounded-xl focus:outline-none focus:ring-2 transition-all text-base text-white font-medium appearance-none cursor-pointer ${
+                                    validationErrors.role
+                                        ? "border-red-500/60 focus:ring-red-500/50 bg-red-500/5"
+                                        : "border-white/20 focus:ring-hub-indigo/50 focus:border-hub-indigo/50 hover:border-white/30"
+                                } [&>option]:bg-[#1a1a2e] [&>option]:text-white`}
+                            >
+                                <option value="" disabled />
+                                <option value="student">Student</option>
+                                <option value="mentor">Mentor</option>
+                                <option value="instructor">Instructor</option>
+                                <option value="tutor">Tutor</option>
+                            </select>
+                            <label className="absolute left-4 top-2 text-xs font-semibold text-hub-indigo/70 pointer-events-none flex items-center gap-2">
+                                <User className="w-4 h-4" /> Account Type
+                            </label>
+                            {/* Chevron icon */}
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </div>
                             {validationErrors.role && (
                                 <p className="text-sm text-red-400 mt-1 flex items-center gap-1 animate-shake">
@@ -206,6 +216,7 @@ export default function RegisterPage() {
                                 </p>
                             )}
                         </div>
+
 
                         {/* Email Input */}
                         <div className="space-y-2 relative">
@@ -329,6 +340,31 @@ export default function RegisterPage() {
                             )}
                         </div>
 
+                        {/* Terms and Privacy Checkbox */}
+                        <div className="pt-2">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <div className="relative flex items-start pt-0.5">
+                                    <input 
+                                        type="checkbox" 
+                                        name="agreeTerms" 
+                                        className="peer sr-only"
+                                    />
+                                    <div className="w-5 h-5 rounded border border-white/20 bg-black/30 peer-checked:bg-hub-indigo peer-checked:border-hub-indigo transition-all flex items-center justify-center group-hover:border-hub-indigo/50">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                    </div>
+                                </div>
+                                <div className="text-sm text-muted-foreground leading-tight">
+                                    I agree to the <Link href="/terms" className="text-hub-indigo hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-hub-indigo hover:underline">Privacy Policy</Link>
+                                </div>
+                            </label>
+                            {validationErrors.agreeTerms && (
+                                <p className="text-sm text-red-400 mt-2 flex items-center gap-1 animate-shake">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {validationErrors.agreeTerms}
+                                </p>
+                            )}
+                        </div>
+
                         {/* Sign Up Button with pulse */}
                         <button
                             type="submit"
@@ -358,9 +394,8 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Footer Text with fade-in */}
-                <p className="text-center text-xs text-muted-foreground animate-fade-in">
-                    By creating an account, you agree to our<br />
-                    <Link href="#" className="text-hub-indigo hover:underline">Terms of Service</Link> and <Link href="#" className="text-hub-indigo hover:underline">Privacy Policy</Link>
+                <p className="text-center text-xs text-muted-foreground animate-fade-in mt-6">
+                    © {new Date().getFullYear()} Meru Tech and Innovation Hub
                 </p>
             </div>
         </div>

@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Protected routes (everything except auth and home)
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register')
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/update-password')
     const isPublicPage = pathname === '/' || pathname.startsWith('/api/') || pathname.startsWith('/_next')
 
     if (!user && !isAuthPage && !isPublicPage) {
@@ -58,6 +58,15 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
         if (pathname.startsWith('/dashboard/super_admin') && role !== 'super_admin') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+        if (pathname.startsWith('/dashboard/tutor') && role !== 'tutor' && role !== 'admin' && role !== 'super_admin') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+        if (pathname.startsWith('/dashboard/admin/analytics') && role !== 'admin' && role !== 'super_admin') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+        if (pathname.startsWith('/dashboard/admin/subscription') && role !== 'admin' && role !== 'super_admin') {
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
     }

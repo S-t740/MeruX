@@ -14,7 +14,9 @@ import {
     MoreVertical,
     CheckCircle2,
     AlertTriangle,
-    RefreshCw
+    RefreshCw,
+    Trash2,
+    Loader2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -23,6 +25,7 @@ export default function SuperAdminDashboard() {
     const supabase = createClient();
     const [profiles, setProfiles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
     const [stats, setStats] = useState({
         totalUsers: 0,
         activeSessions: 0,
@@ -64,6 +67,22 @@ export default function SuperAdminDashboard() {
 
         fetchSystemData();
     }, [supabase]);
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) return;
+        setDeletingUserId(userId);
+        try {
+            const { error } = await supabase.from("profiles").delete().eq("id", userId);
+            if (error) throw error;
+            setProfiles(prev => prev.filter(p => p.id !== userId));
+            setStats(prev => ({ ...prev, totalUsers: prev.totalUsers - 1 }));
+        } catch (error) {
+            console.error("Delete user failed:", error);
+            alert("Failed to delete user. Please try again.");
+        } finally {
+            setDeletingUserId(null);
+        }
+    };
 
     return (
         <div className="space-y-12 pb-20">
@@ -160,9 +179,22 @@ export default function SuperAdminDashboard() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 hover:bg-accent rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button
+                                                    onClick={() => handleDeleteUser(
+                                                        user.id,
+                                                        (user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : "") || user.email || "this user"
+                                                    )}
+                                                    disabled={deletingUserId === user.id}
+                                                    title="Delete User"
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-hub-rose/10 text-hub-rose hover:bg-hub-rose hover:text-white border border-hub-rose/20 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-60"
+                                                >
+                                                    {deletingUserId === user.id
+                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                        : <Trash2 className="w-3 h-3" />}
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

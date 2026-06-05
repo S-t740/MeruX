@@ -82,6 +82,7 @@ export function useUserRole() {
     isInstructor: profile?.role === 'instructor',
     isStudent: profile?.role === 'student',
     isMentor: profile?.role === 'mentor',
+    isTutor: profile?.role === 'tutor',
     isResearcher: profile?.role === 'researcher',
     isReviewer: profile?.role === 'reviewer',
   };

@@ -13,7 +13,8 @@ import {
     Clock,
     PlayCircle,
     ArrowUpRight,
-    Activity
+    Activity,
+    Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,12 @@ export default function InstructorDashboard() {
                         className="px-6 py-3 bg-accent/30 rounded-xl font-bold flex items-center gap-2 border border-border/50 text-sm hover:bg-accent transition-all"
                     >
                         <ClipboardCheck className="w-4 h-4" /> Gradebook
+                    </button>
+                    <button
+                        onClick={() => router.push('/dashboard/instructor/ai-lesson-generator')}
+                        className="px-6 py-3 bg-hub-indigo/10 border border-hub-indigo/30 text-hub-indigo rounded-xl font-bold hover:bg-hub-indigo/20 transition-all text-sm flex items-center gap-2 shadow-lg shadow-hub-indigo/10"
+                    >
+                        <Sparkles className="w-4 h-4" /> AI Lesson Generator
                     </button>
                     <button onClick={() => router.push('/courses')} className="px-6 py-3 bg-hub-indigo text-white rounded-xl font-bold hover:bg-hub-indigo/90 transition-all text-sm shadow-xl shadow-hub-indigo/20 flex items-center gap-2">
                         <Plus className="w-4 h-4" /> Create Course

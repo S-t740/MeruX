@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Book, CheckCircle, Loader2, Users, X, Settings } from "lucide-react";
+import { Plus, Search, Filter, Book, CheckCircle, Loader2, Users, X, Settings, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -16,6 +16,7 @@ export default function CourseManagement() {
     const [userRole, setUserRole] = useState<string>("student");
     const [loading, setLoading] = useState(true);
     const [enrollingId, setEnrollingId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     // Create course modal state
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -100,6 +101,21 @@ export default function CourseManagement() {
         }
     };
 
+    const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
+        if (!confirm(`Are you sure you want to permanently delete "${courseTitle}"? This action cannot be undone.`)) return;
+        setDeletingId(courseId);
+        try {
+            const { error } = await supabase.from("courses").delete().eq("id", courseId);
+            if (error) throw error;
+            setCourses(prev => prev.filter(c => c.id !== courseId));
+        } catch (error) {
+            console.error("Delete failed:", error);
+            alert("Failed to delete course. Please try again.");
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     if (loading) {
         return <div className="p-12 text-center animate-pulse text-muted-foreground font-medium">Loading innovation curriculum...</div>;
     }
@@ -177,6 +193,8 @@ export default function CourseManagement() {
                         isEnrolling={enrollingId === course.id}
                         userRole={userRole}
                         userId={user?.id}
+                        onDelete={() => handleDeleteCourse(course.id, course.title)}
+                        isDeleting={deletingId === course.id}
                     />
                 ))}
                 {courses.length === 0 && (
@@ -190,7 +208,7 @@ export default function CourseManagement() {
 }
 
 
-function CourseListItem({ course, isEnrolled, onEnroll, isEnrolling, userRole, userId }: any) {
+function CourseListItem({ course, isEnrolled, onEnroll, isEnrolling, userRole, userId, onDelete, isDeleting }: any) {
     const instructorName = course.instructor?.first_name ? `${course.instructor.first_name} ${course.instructor.last_name || ''}`.trim() : "Instructor";
     const navRouter = useRouter();
 
@@ -254,13 +272,25 @@ function CourseListItem({ course, isEnrolled, onEnroll, isEnrolling, userRole, u
                 </div>
 
                 {canManage ? (
-                    <button
-                        onClick={() => navRouter.push(`/courses/manage?id=${course.id}`)}
-                        className="w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-hub-indigo/10 text-hub-indigo hover:bg-hub-indigo/20 border border-hub-indigo/20 active:scale-95"
-                    >
-                        <Settings className="w-4 h-4" />
-                        {isInstructor ? 'Edit Curriculum' : 'Manage Course'}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => navRouter.push(`/courses/manage?id=${course.id}`)}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-hub-indigo/10 text-hub-indigo hover:bg-hub-indigo/20 border border-hub-indigo/20 active:scale-95"
+                        >
+                            <Settings className="w-4 h-4" />
+                            {isInstructor ? 'Edit' : 'Manage'}
+                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={onDelete}
+                                disabled={isDeleting}
+                                title="Delete Course"
+                                className="px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center bg-hub-rose/10 text-hub-rose hover:bg-hub-rose hover:text-white border border-hub-rose/20 active:scale-95 disabled:opacity-60"
+                            >
+                                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                        )}
+                    </div>
                 ) : (
                     <button
                         onClick={onEnroll}
