@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
 
     // Protected routes (everything except auth and home)
     const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/update-password')
-    const isPublicPage = pathname === '/' || pathname.startsWith('/api/') || pathname.startsWith('/_next')
+    const isPublicPage = pathname === '/' || pathname.startsWith('/api/') || pathname.startsWith('/_next') || pathname.startsWith('/terms') || pathname.startsWith('/privacy')
 
     if (!user && !isAuthPage && !isPublicPage) {
         return NextResponse.redirect(new URL('/login', request.url))
