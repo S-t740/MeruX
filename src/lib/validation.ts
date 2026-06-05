@@ -17,7 +17,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(["student", "mentor", "instructor", "tutor"]),
   agreeTerms: z.literal("on", {
-    errorMap: () => ({ message: "You must agree to the Terms of Service and Privacy Policy" })
+    message: "You must agree to the Terms of Service and Privacy Policy"
   }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",

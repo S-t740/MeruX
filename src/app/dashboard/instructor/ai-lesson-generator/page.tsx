@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { LessonJSON } from "@/types/lesson-json";
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import { AdoptToCourseModal } from "@/components/lesson/AdoptToCourseModal";
 
 /* ─────────────── Types ─────────────── */
 type Difficulty = "beginner" | "intermediate" | "advanced";

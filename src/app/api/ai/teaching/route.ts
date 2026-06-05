@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
                 role: m.role,
                 content: m.content,
             })),
-            maxTokens: 1024,
+            maxOutputTokens: 1024,
             temperature: 0.7,
         });
 
-        return result.toDataStreamResponse();
+        return result.toTextStreamResponse();
     } catch (error: any) {
         console.error("AI Teaching Assistant error:", error);
         return NextResponse.json({ error: "AI service error: " + (error.message || "Unknown error") }, { status: 500 });
