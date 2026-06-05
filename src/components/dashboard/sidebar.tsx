@@ -177,7 +177,7 @@ export function Sidebar({ className, onClose }: { className?: string; onClose?: 
                         className="rounded-lg shadow-lg shadow-hub-indigo/20"
                         priority
                     />
-                    <span>Soma<span className="text-hub-indigo">Flow</span></span>
+                    <span>Meru<span className="text-hub-indigo">X</span></span>
                 </Link>
 
                 <button
