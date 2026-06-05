@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { SessionSecurityProvider } from "@/components/auth/session-security";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,9 +42,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${outfit.variable} font-inter`} suppressHydrationWarning>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            {children}
-          </div>
+          <SessionSecurityProvider>
+            <div className="min-h-screen flex flex-col">
+              {children}
+            </div>
+          </SessionSecurityProvider>
         </AuthProvider>
       </body>
     </html>
